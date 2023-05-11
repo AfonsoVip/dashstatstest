@@ -8,6 +8,7 @@ import plotly.subplots as sp
 import plotly.graph_objs as go
 import openpyxl
 import requests
+
 pd.options.mode.chained_assignment = None  
 
 
@@ -15,11 +16,11 @@ from io import StringIO
 from PIL import Image
 from io import BytesIO
 
-
 logo_url = "https://github.com/AfonsoVip/dashstatstest/blob/master/logo.png?raw=true"
 
 response = requests.get(logo_url)
 logo = Image.open(BytesIO(response.content))
+
 
 
 buffered_logo = BytesIO()
@@ -127,9 +128,6 @@ def networth_evolution_each_day(df):
     )
 
     return fig
-
-
-
 
 def threshold_summary(thresholds,df):
     results_dict = {'threshold': [], 'Low Exposure Strategy': [], 'High Exposure Strategy': []}
@@ -466,9 +464,14 @@ def last_day_of_the_year_last_hour(df):
     return last_day_df
 
 
-
 def format_percentage1(col):
-    return col.apply(lambda x: str(round(x)) + '%' if isinstance(x, (int, float)) else '' if x is not None else None)
+    return col.apply(lambda x: safe_round_and_format(x))
+
+def safe_round_and_format(x):
+    try:
+        return str(round(x)) + '%'
+    except (TypeError, ValueError):
+        return ''
 
 def return_volatility(df):
 
@@ -507,7 +510,8 @@ def return_volatility(df):
     return return_vol
 
 def format_percentage(col):
-   return col.apply(lambda x: str(round(x)) + '%' if isinstance(x, (int, float)) else '' if x is not None else None)
+    return col.apply(lambda x: safe_round_and_format(x))
+
 
 def important_scores(df,last_hour,last_day_of_the_year):
 
@@ -1010,7 +1014,7 @@ table_style = """
         text-align: center;
         border: 1px solid #2a2d34;
         padding: 2px;
-        font-size: 12px;
+        font-size: 15px;
         line-height: 1.2
         color: white;
     }
