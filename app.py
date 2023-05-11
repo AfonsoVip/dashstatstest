@@ -507,7 +507,7 @@ def return_volatility(df):
     return return_vol
 
 def format_percentage(col):
-    return col.apply(lambda x: str(round(x, 2)) + '%' if isinstance(x, (int, float)) and not mt.isnan(x) and col.tolist().index(x) != 2 else str(round(float(x), 2)) if str(x) != 'nan' else x)
+    return return col.apply(lambda x: str(round(x)) + '%' if isinstance(x, (int, float)) else '' if x is not None else None)
 
 def important_scores(df,last_hour,last_day_of_the_year):
 
