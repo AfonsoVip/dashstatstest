@@ -15,15 +15,14 @@ from PIL import Image
 from io import BytesIO
 
 
-logo_url = "https://raw.githubusercontent.com/AfonsoVip/dashstatstest/master/logo.png"
-
+logo_url = "https://github.com/AfonsoVip/dashstatstest/blob/master/logo.png?raw=true"
 
 response = requests.get(logo_url)
-logo_img = Image.open(BytesIO(response.content))
+logo = Image.open(BytesIO(response.content))
 
 
 buffered_logo = BytesIO()
-logo_img.save(buffered_logo, format="PNG")
+logo.save(buffered_logo, format="PNG")
 logo_b64 = base64.b64encode(buffered_logo.getvalue()).decode()
 
 st.set_page_config(layout="wide")
