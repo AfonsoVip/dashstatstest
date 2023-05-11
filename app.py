@@ -953,6 +953,8 @@ if uploaded_file is not None:
     initial_df = initial_df.reset_index(drop=True)
     
     main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
+    df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
+    df_thresholds = format_dataframe_values(df_thresholds)
 
     last_hour = last_hour_df(main_df)
     last_hour_day = last_hour_and_day_df(main_df)
@@ -989,8 +991,6 @@ if uploaded_file is not None:
     first_strategy_df = first_strategy(important_scores_df_21,important_scores_df_22)
     second_strategy_df = second_strategy(important_scores_df_21,important_scores_df_22)
     third_strategy_df = third_strategy(important_scores_df_21,important_scores_df_22)
-    df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
-    df_thresholds = format_dataframe_values(df_thresholds)
     fig1 = networth_evolution(last_hour)
     fig2 = networth_evolution_each_day(last_hour)
 
