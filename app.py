@@ -7,6 +7,7 @@ import numbers
 import plotly.subplots as sp
 import plotly.graph_objs as go
 import openpyxl
+import requests
 pd.options.mode.chained_assignment = None  
 
 
