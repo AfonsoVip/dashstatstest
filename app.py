@@ -23,7 +23,7 @@ logo_img = Image.open(BytesIO(response.content))
 
 
 buffered_logo = BytesIO()
-logo.save(buffered_logo, format="PNG")
+logo_img.save(buffered_logo, format="PNG")
 logo_b64 = base64.b64encode(buffered_logo.getvalue()).decode()
 
 st.set_page_config(layout="wide")
