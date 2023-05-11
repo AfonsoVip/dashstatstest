@@ -15,7 +15,7 @@ from PIL import Image
 from io import BytesIO
 
 
-logo = Image.open("test/logo.png")
+logo = Image.open("https://raw.githubusercontent.com/AfonsoVip/dashstatstest/master/logo.png")
 
 
 buffered_logo = BytesIO()
