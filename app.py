@@ -468,7 +468,7 @@ def last_day_of_the_year_last_hour(df):
 
 
 def format_percentage1(col):
-    return col.apply(lambda x: str(round(x)) + '%' if isinstance(x, (int, float)) else '')
+    return col.apply(lambda x: str(round(x)) + '%' if isinstance(x, (int, float)) else '' if x is not None else None)
 
 def return_volatility(df):
 
