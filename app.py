@@ -467,16 +467,6 @@ def last_day_of_the_year_last_hour(df):
 def format_percentage(col):
     return col.apply(lambda x: str(round(x, 2)) + '%' if isinstance(x, (int, float)) and not mt.isnan(x) and col.tolist().index(x) != 2 else str(round(float(x), 2)) if str(x) != 'nan' else x)
 
-
-def safe_round_and_format(x):
-    try:
-        return str(round(x)) + '%'
-    except (TypeError, ValueError):
-        return ''
-
-
-
-
 def return_volatility(df):
 
     returns = pd.DataFrame({
