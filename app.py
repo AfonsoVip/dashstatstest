@@ -464,9 +464,8 @@ def last_day_of_the_year_last_hour(df):
     last_day_df = last_day_df[['StartTime','NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY OF THE YEAR','NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY OF THE YEAR','NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY OF THE YEAR','btc hold','NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY OF THE YEAR RATIO','NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY OF THE YEAR RATIO','NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY OF THE YEAR RATIO','btc hold RATIO']]
     return last_day_df
 
-
 def format_percentage(col):
-    return col.apply(lambda x, idx: safe_round_and_format(x, idx), args=(col.index,))
+    return pd.Series([safe_round_and_format(x, idx) for idx, x in enumerate(col)])
 
 def safe_round_and_format(x, index=-1):
     if index == 2:
