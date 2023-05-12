@@ -71,7 +71,7 @@ def networth_evolution(df):
     fig.update_layout(
         width=1500,    
         height=600,
-        title=dict(text='Networth Evolution  (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
+        title=dict(text='Networth Evolution (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
         legend=dict(x=0.7, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
         font=dict(family='Calibri', size=12, color='#666'),
@@ -94,9 +94,9 @@ def networth_evolution_each_day(df):
     
     # Create a dictionary that maps the old strategy names to the new names
     name_mapping = {
-        'if started with NW 2STEPS LONG NO THRESHOLD LAST HOUR': 'If started with Trading Strategy',
-        'if started with NW 2STEPS LONG WITH THRESHOLD LAST HOUR': 'If started with Low Exposure Strategy',
-        'if started with NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR': 'If started with High Exposure Strategy',
+        'if started with NW 2STEPS LONG NO THRESHOLD LAST HOUR': 'Trading Strategy',
+        'if started with NW 2STEPS LONG WITH THRESHOLD LAST HOUR': 'Low Exposure Strategy',
+        'if started with NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR': 'High Exposure Strategy',
         'if started with btc hold LAST HOUR': 'If started with Hold BTC Strategy'
     }
 
@@ -112,7 +112,7 @@ def networth_evolution_each_day(df):
     fig.update_layout(
         width=1500,
         height=600,
-        title=dict(text='Networth Evolution (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
+        title=dict(text='Networth Evolution Today if started on thid day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
         legend=dict(x=0.6, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
         font=dict(family='Calibri', size=12, color='#666'),
