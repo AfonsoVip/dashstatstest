@@ -468,9 +468,9 @@ def last_day_of_the_year_last_hour(df):
 def format_percentage(col):
     return col.apply(lambda x: safe_round_and_format(x))
 
-def safe_round_and_format(x):
+def safe_round_and_format(x, exclude_index=2):
     try:
-        return str(round(x)) + '%'
+        return [str(round(xi)) + '%' if i != exclude_index else xi for i, xi in enumerate(x)]
     except (TypeError, ValueError):
         return ''
 
