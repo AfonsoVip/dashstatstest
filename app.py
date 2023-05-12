@@ -97,7 +97,7 @@ def networth_evolution_each_day(df):
         'if started with NW 2STEPS LONG NO THRESHOLD LAST HOUR': 'Trading Strategy',
         'if started with NW 2STEPS LONG WITH THRESHOLD LAST HOUR': 'Low Exposure Strategy',
         'if started with NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR': 'High Exposure Strategy',
-        'if started with btc hold LAST HOUR': 'If started with Hold BTC Strategy'
+        'if started with btc hold LAST HOUR': 'Hold BTC Strategy'
     }
 
     # Looping through each strategy and add a time series to the subplot
