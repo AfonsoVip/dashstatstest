@@ -84,7 +84,7 @@ def networth_evolution(df):
             nticks=20           
         ),
         yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f'),
-        plot_bgcolor='#000000'
+        plot_bgcolor='#0E1117'
     )
 
     return fig
@@ -126,7 +126,7 @@ def networth_evolution_each_day(df):
             nticks=20           
         ),
         yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f'),
-        plot_bgcolor='#000000'
+        plot_bgcolor='#0E1117'
     )
 
     return fig
