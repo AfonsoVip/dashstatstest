@@ -553,10 +553,10 @@ def important_scores(df,last_hour,last_day_of_the_year):
     return_2021_second = last_day_of_the_year['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY OF THE YEAR RATIO'].iloc[0] * 100 
     return_2022_second = last_day_of_the_year['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY OF THE YEAR RATIO'].iloc[-1] * 100
     percentagetime_in_second = df['in/out 2STEPS LONG WITH THRESHOLD'].mean() * 100
+    value_counts_series = df['buy/hold/sell'].value_counts(normalize=True)
     percentagetime_buy_second = df['buy/hold/sell'].value_counts(normalize=True)[1] * 100
-    percentagetime_hold_second = df['buy/hold/sell'].value_counts(normalize=True)[0] * 100
+    percentagetime_hold_second = value_counts_series[0] * 100 if 0 in value_counts_series.index else 0
     percentagetime_sell_second = df['buy/hold/sell'].value_counts(normalize=True)[-1] * 100
- 
 
     # NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL
     return_s_third = ((last_day_of_the_year['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY OF THE YEAR'].iloc[-1] / 100) - 1) * 100
@@ -700,7 +700,8 @@ def important_scores_21(df,last_hour,last_day_of_the_year):
     worst_monthly_return_second = df_21_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO'].min() * 100
     percentagetime_in_second = df_21['in/out 2STEPS LONG WITH THRESHOLD'].mean() * 100
     percentagetime_buy_second = df_21['buy/hold/sell'].value_counts(normalize=True)[1] * 100
-    percentagetime_hold_second = df_21['buy/hold/sell'].value_counts(normalize=True)[0] * 100
+    value_counts_series = df_21['buy/hold/sell'].value_counts(normalize=True)
+    percentagetime_hold_second = value_counts_series[0] * 100 if 0 in value_counts_series.index else 0
     percentagetime_sell_second = df_21['buy/hold/sell'].value_counts(normalize=True)[-1] * 100
 
     # NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL
@@ -803,6 +804,7 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
     worst_monthly_return_second = df_22_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO'].min() * 100
     percentagetime_in_second = df_22['in/out 2STEPS LONG WITH THRESHOLD'].mean() * 100
     percentagetime_buy_second = df_22['buy/hold/sell'].value_counts(normalize=True)[1] * 100
+    
     percentagetime_hold_second = df_22['buy/hold/sell'].value_counts(normalize=True, dropna=False).get(0, 0) * 100
     percentagetime_sell_second = df_22['buy/hold/sell'].value_counts(normalize=True)[-1] * 100
 
