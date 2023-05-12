@@ -467,9 +467,8 @@ def last_day_of_the_year_last_hour(df):
 
 
 
-def format_percentage_except_third_row(col):
-    return col.apply(lambda x, i: safe_round_and_format(x) if i != 2 else x)
-
+def format_percentage(col):
+    return col.apply(lambda x: safe_round_and_format(x))
 
 def safe_round_and_format(x):
     try:
