@@ -510,9 +510,14 @@ def return_volatility(df):
 
     return return_vol
 
-def format_percentage(col):
+def format_percentage1(col):
     return col.apply(lambda x: safe_round_and_format(x))
 
+def safe_round_and_format(x, exclude_index=2):
+    try:
+        return [str(round(xi)) + '%' if i != exclude_index else xi for i, xi in enumerate(x)]
+    except (TypeError, ValueError):
+        return ''
 
 def important_scores(df,last_hour,last_day_of_the_year):
 
