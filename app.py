@@ -469,9 +469,8 @@ def format_percentage(col):
     return col.apply(lambda x: safe_round_and_format(x))
 
 
-def safe_round_and_format(x, i):
-    if i == 2:
-        return x
+
+def safe_round_and_format(x):
     try:
         return str(round(x)) + '%'
     except (TypeError, ValueError):
