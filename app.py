@@ -465,6 +465,10 @@ def last_day_of_the_year_last_hour(df):
     return last_day_df
 
 
+def format_percentage(col):
+    return col.apply(lambda x: safe_round_and_format(x))
+
+
 def safe_round_and_format(x, i):
     if i == 2:
         return x
@@ -473,10 +477,6 @@ def safe_round_and_format(x, i):
     except (TypeError, ValueError):
         return ''
 
-def format_percentage(df):
-    return df.apply(lambda col: col.apply(lambda x, i=col.name: safe_round_and_format(x, i)), axis=0)
-
-    
 def return_volatility(df):
 
     returns = pd.DataFrame({
