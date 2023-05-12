@@ -112,7 +112,7 @@ def networth_evolution_each_day(df):
     fig.update_layout(
         width=1500,
         height=600,
-        title=dict(text='Networth Evolution Today if started on thid day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
+        title=dict(text='Networth Evolution Today if started on this day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
         legend=dict(x=0.6, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
         font=dict(family='Calibri', size=12, color='#666'),
