@@ -725,7 +725,7 @@ def important_scores_21(df,last_hour,last_day_of_the_year):
     #BTC HOLD
     return_2021_forth = last_day_of_the_year['btc hold RATIO'].iloc[0] * 100
     volatility_forth = df_21_last_hour['btc hold RATIO'].std() * 100
-    annualized_sharpe_ratio_forth = ((df_21_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_21_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) * 100
+    annualized_sharpe_ratio_forth = ((df_21_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_21_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_forth = np.nan
     accuracy_signals_forth = np.nan
     better_arms_forth = np.nan
@@ -828,7 +828,7 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
     #BTC HOLD
     return_2022_forth = last_day_of_the_year['btc hold RATIO'].iloc[0] * 100
     volatility_forth = df_22_last_hour['btc hold RATIO'].std() * 100
-    annualized_sharpe_ratio_forth = ((df_22_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_22_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) * 100
+    annualized_sharpe_ratio_forth = ((df_22_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_22_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_forth = np.nan
     accuracy_signals_forth = np.nan
     better_arms_forth = np.nan
