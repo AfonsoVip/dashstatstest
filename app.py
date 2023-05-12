@@ -956,10 +956,10 @@ if uploaded_file is not None:
     initial_df = initial_df.loc[mask]
     initial_df = initial_df.reset_index(drop=True)
     
-    main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
     df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
     df_thresholds = format_dataframe_values(df_thresholds)
-
+    main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
+    
     last_hour = last_hour_df(main_df)
     last_hour_day = last_hour_and_day_df(main_df)
     last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
