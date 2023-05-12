@@ -83,7 +83,8 @@ def networth_evolution(df):
             tick0=df['StartTime'].min(), 
             nticks=20           
         ),
-        yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f')
+        yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f'),
+        plot_bgcolor='#333333'
     )
 
     return fig
@@ -124,7 +125,8 @@ def networth_evolution_each_day(df):
             tick0=df['StartTime'].min(), 
             nticks=20           
         ),
-        yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f')
+        yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f'),
+        plot_bgcolor='#333333'
     )
 
     return fig
