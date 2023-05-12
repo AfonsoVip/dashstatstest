@@ -129,6 +129,7 @@ def networth_evolution_each_day(df):
 
     return fig
 
+@st.cache
 def threshold_summary(thresholds,df):
     results_dict = {'threshold': [], 'Low Exposure Strategy': [], 'High Exposure Strategy': []}
     for threshold in thresholds:
@@ -144,7 +145,7 @@ def threshold_summary(thresholds,df):
     results_df.index = results_df.index * 100
     return results_df
 
-
+@st.cache
 def automatizev2(starttime,price_open,price_close,prediction,threshold):
  
 
@@ -210,7 +211,7 @@ def automatizev2(starttime,price_open,price_close,prediction,threshold):
 
     return initial_df
 
-
+@st.cache
 def automatize(starttime,price_open,price_close,prediction,threshold):
  
 
