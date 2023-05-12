@@ -465,7 +465,7 @@ def last_day_of_the_year_last_hour(df):
     return last_day_df
 
 def format_percentage(col):
-    return col.apply(lambda value_and_index: safe_round_and_format(*value_and_index), args=(col.index,))
+    return col.apply(lambda value_and_index: safe_round_and_format(value_and_index[0], value_and_index[1]), args=(enumerate(col),))
 
 def safe_round_and_format(x, index):
     if index == 2:
