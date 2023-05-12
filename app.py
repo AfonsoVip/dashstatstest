@@ -465,15 +465,22 @@ def last_day_of_the_year_last_hour(df):
     return last_day_df
 
 def format_percentage(col):
-    return col.transform(safe_round_and_format, args=(col.index,))
+    new_col = []
+    for idx, x in enumerate(col):
+        if idx == 2:
+            new_col.append(x)
+        else:
+            try:
+                new_col.append(str(round(x)) + '%')
+            except (TypeError, ValueError):
+                new_col.append(x)
+    return pd.Series(new_col)
 
-def safe_round_and_format(x, index):
-    if index.get_loc(index[-1]) == 2:
-        return x
+def safe_round_and_format(x):
     try:
         return str(round(x)) + '%'
     except (TypeError, ValueError):
-        return x
+        return ''
 
 
 
