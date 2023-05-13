@@ -1077,7 +1077,8 @@ if submit_button:
     st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
 
     
- if rerun:
+if rerun:
+    
     threshold_decimal = max_threshold/100
     main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
 
