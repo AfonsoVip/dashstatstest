@@ -1053,33 +1053,7 @@ if submit_button:
     st.markdown("<br>", unsafe_allow_html=True)
     st.write('Best Threshold found', max_threshold)
     rerun = st.button('Rerun with best threshold') 
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    
-    st.plotly_chart(fig1)
-    st.plotly_chart(fig2)
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
-    col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
-    col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
-
-
-
-    col1.write(f'{table_style}{table2_html}', unsafe_allow_html=True)
-    col2.write(f'{table_style}{table3_html}', unsafe_allow_html=True)
-    col3.write(f'{table_style}{table4_html}', unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
-    st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
-
-    
 if rerun:
-    
     threshold_decimal = max_threshold/100
     main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
 
@@ -1120,10 +1094,10 @@ if rerun:
     third_strategy_df = third_strategy(important_scores_df_21,important_scores_df_22)
     fig1 = networth_evolution(last_hour)
     fig2 = networth_evolution_each_day(last_hour)
-
+    
     st.markdown("<br>", unsafe_allow_html=True)
-
-
+    
+    
     st.plotly_chart(fig1)
     st.plotly_chart(fig2)
 
@@ -1144,3 +1118,6 @@ if rerun:
 
     st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
     st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
+
+    
+
