@@ -1035,7 +1035,7 @@ table_style = """
     }
 </style>
 """
-
+rerun = False
 
 if submit_button:
 
