@@ -1035,7 +1035,7 @@ table_style = """
     }
 </style>
 """
-rerun = st.button('Rerun with best threshold') 
+
 
 if submit_button:
 
