@@ -1051,77 +1051,77 @@ if submit_button:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     st.write('Best Threshold found', max_threshold)
-    rerun = st.button('Rerun with best threshold')
-    if rerun:
-        threshold_decimal = max_threshold/100
-        main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
-
-        last_hour = last_hour_df(main_df)
-        last_hour_day = last_hour_and_day_df(main_df)
-        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
-
-        df_21 = filter_2021_df(main_df)
-        df_22 = filter_2022_df(main_df)
-        df_21_last_hour = filter_2021_last_hour_df(last_hour)
-        df_22_last_hour = filter_2022_last_hour_df(last_hour)
-        df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
-        df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
-
-        return_volatility_df = return_volatility(last_hour)
-
-        important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
-        important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
-        important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
-
-        important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df['BTC HOLD'] = format_percentage(important_scores_df['BTC HOLD'])
-
-        important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df_21['BTC HOLD'] = format_percentage(important_scores_df_21['BTC HOLD'])
-
-        important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
-        
-        first_strategy_df = first_strategy(important_scores_df_21,important_scores_df_22)
-        second_strategy_df = second_strategy(important_scores_df_21,important_scores_df_22)
-        third_strategy_df = third_strategy(important_scores_df_21,important_scores_df_22)
-        fig1 = networth_evolution(last_hour)
-        fig2 = networth_evolution_each_day(last_hour)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-
-
-        st.plotly_chart(fig1)
-        st.plotly_chart(fig2)
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
-        col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
-        col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
-
-
-
-        col1.write(f'{table_style}{table2_html}', unsafe_allow_html=True)
-        col2.write(f'{table_style}{table3_html}', unsafe_allow_html=True)
-        col3.write(f'{table_style}{table4_html}', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
-        st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
-        
-    
+    rerun = st.button('Rerun with best threshold') 
     st.markdown("<br>", unsafe_allow_html=True)
     
     
+    st.plotly_chart(fig1)
+    st.plotly_chart(fig2)
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
+    col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
+    col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
+
+
+
+    col1.write(f'{table_style}{table2_html}', unsafe_allow_html=True)
+    col2.write(f'{table_style}{table3_html}', unsafe_allow_html=True)
+    col3.write(f'{table_style}{table4_html}', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
+    st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
+
+    
+ if rerun:
+    threshold_decimal = max_threshold/100
+    main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
+
+    last_hour = last_hour_df(main_df)
+    last_hour_day = last_hour_and_day_df(main_df)
+    last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
+
+    df_21 = filter_2021_df(main_df)
+    df_22 = filter_2022_df(main_df)
+    df_21_last_hour = filter_2021_last_hour_df(last_hour)
+    df_22_last_hour = filter_2022_last_hour_df(last_hour)
+    df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
+    df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
+
+    return_volatility_df = return_volatility(last_hour)
+
+    important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
+    important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
+    important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
+
+    important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
+    important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
+    important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+    important_scores_df['BTC HOLD'] = format_percentage(important_scores_df['BTC HOLD'])
+
+    important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'])
+    important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'])
+    important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+    important_scores_df_21['BTC HOLD'] = format_percentage(important_scores_df_21['BTC HOLD'])
+
+    important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'])
+    important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
+    important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+    important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
+
+    first_strategy_df = first_strategy(important_scores_df_21,important_scores_df_22)
+    second_strategy_df = second_strategy(important_scores_df_21,important_scores_df_22)
+    third_strategy_df = third_strategy(important_scores_df_21,important_scores_df_22)
+    fig1 = networth_evolution(last_hour)
+    fig2 = networth_evolution_each_day(last_hour)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+
     st.plotly_chart(fig1)
     st.plotly_chart(fig2)
 
