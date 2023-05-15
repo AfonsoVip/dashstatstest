@@ -36,7 +36,7 @@ st.sidebar.markdown(
 )
 
 st.sidebar.title("Configuration")
-threshold = st.sidebar.slider("Select a threshold", 0.00, 2.00, 0.00, 0.01,format='%2f')
+threshold = st.sidebar.number_input("Enter a number:", min_value=0.0,step=0.1,format='%2f')
 threshold_decimal = threshold / 100
 
 uploaded_file = st.sidebar.file_uploader("Drag and drop your file", type=['csv','xlsx','xlsm'])
