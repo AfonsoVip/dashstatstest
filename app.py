@@ -131,7 +131,7 @@ def networth_evolution_each_day(df):
 
     return fig
 
-
+@st.cache
 def threshold_summary(thresholds,df):
     results_dict = {'threshold': [], 'Low Exposure Strategy': [], 'High Exposure Strategy': []}
     for threshold in thresholds:
