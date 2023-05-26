@@ -49,21 +49,63 @@ label[for="tab_select_0"], label[for="tab_select_1"] {
 </style>
 """, unsafe_allow_html=True)
 
+# Being Used For the plot_pct_difference function
+net_worth_col_map = {
+    "Trading strategy": "NW 2 STEPS LONG NO THRESHOLD",
+    "Low Exposure Strategy": "NW 2STEPS LONG WITH THRESHOLD",
+    "High Exposure Strategy": "NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL",
+    "Hold BTC strategy": "btc hold"
+}
 
-def plot_pct_difference(df):
+strategy_col_map = {
+        "Trading strategy": "return of portfolio 2STEPS LONG WITH NO THRESHOL AND SELECTIVE SELL",
+        "Low Exposure Strategy": "return of portfolio 2STEPS LONG WITH THRESHOLD",
+        "High Exposure Strategy": "return of portfolio 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL",
+        "Hold BTC strategy": "return of btc"
+    }
+
+# Including every key but the last form our dictionary since it doesn't make sense to compare two equal strategies.
+strategies = list(strategy_col_map.keys())[:-1]
+
+def plot_pct_difference(df, selected_strategy):
+
+
+    selected_net_worth_col = net_worth_col_map[selected_strategy]
+    btc_net_worth_col = net_worth_col_map["Hold BTC strategy"]
+    
+    green_values = [(net_worth_val - btc_net_worth_val) if (return_btc < 0) & (strategy_return == 0) else 0
+                    for return_btc, strategy_return, net_worth_val, btc_net_worth_val in
+                    zip(df['return of btc'], df[strategy_col_map[selected_strategy]], df[selected_net_worth_col], df[btc_net_worth_col])]
+
+    red_values = [(net_worth_val - btc_net_worth_val) if (return_btc > 0) & (strategy_return == 0) else 0
+                  for return_btc, strategy_return, net_worth_val, btc_net_worth_val in
+                  zip(df['return of btc'], df[strategy_col_map[selected_strategy]], df[selected_net_worth_col], df[btc_net_worth_col])]
+
+    yellow_values = [(net_worth_val - btc_net_worth_val) if (strategy_return != 0) else 0
+                  for return_btc, strategy_return, net_worth_val, btc_net_worth_val in
+                  zip(df['return of btc'], df[strategy_col_map[selected_strategy]], df[selected_net_worth_col], df[btc_net_worth_col])]
+
 
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(x=main_df['StartTime'], y=df['green_values'], name='BTC down and ARMS = 0', marker_color='green', opacity=1, hovertemplate="%{y:.1f}%"))
-    fig.add_trace(go.Bar(x=main_df['StartTime'], y=df['red_values'], name='BTC up and ARMS = 0', marker_color='red', opacity=1, hovertemplate="%{y:.1f}%"))
-    fig.add_trace(go.Bar(x=main_df['StartTime'], y=df['yellow_values'], name='No Condition is Met', marker_color='yellow', opacity=1, hovertemplate="%{y:.1f}%"))
+    green_trace = go.Bar(x=df['StartTime'], y=green_values, name='BTC down and {} = 0'.format(selected_strategy), marker_color='green', opacity=1)
+    green_trace.update(hovertemplate='Date: %{x|%d %b %Y}<br>Difference: %{y:.2f}')
+    fig.add_trace(green_trace)
+
+    red_trace = go.Bar(x=df['StartTime'], y=red_values, name='BTC up and {} = 0'.format(selected_strategy),marker_color='red', opacity=1)
+    red_trace.update(hovertemplate='Date: %{x|%d %b %Y}<br>Difference: %{y:.2f}')
+    fig.add_trace(red_trace)
+
+    yellow_trace = go.Bar(x=df['StartTime'], y=yellow_values, name='ARMS = BTC', marker_color='yellow', opacity=1)
+    yellow_trace.update(hovertemplate='Date: %{x|%d %b %Y}<br>Difference: %{y:.2f}')
+    fig.add_trace(yellow_trace)
 
 
     fig.update_layout(
-        width = 1500,
-        height = 1000,
-        yaxis=dict(title_text='Percentage Return BTC', type='linear', tickformat='.2f%',showgrid=False,),
-        title=dict(text='Arms vs BTC Performance', font=dict(color='#3dfd9f')),
+        width=1500,
+        height=1000,
+        yaxis=dict(title_text='Difference in Strategy', type='linear', showgrid=False),
+        title=dict(text='{} vs BTC Performance'.format(selected_strategy), font=dict(color='#3dfd9f')),
         hovermode="x unified",
         legend=dict(
             orientation="h",
@@ -72,12 +114,14 @@ def plot_pct_difference(df):
             xanchor="right",
             x=1
         ),
-        xaxis=dict(gridcolor='rgba(200, 200, 200, 0.2)',showgrid=False,nticks=20),
-       plot_bgcolor='#0E1117',
-    
+        xaxis=dict(gridcolor='rgba(200, 200, 200, 0.2)',
+                   showgrid=False,
+                   nticks=20,
+                   tickformat="%b %Y",
+                   tick0=df['StartTime'].min(),
+                   dtick="M1"),
+        plot_bgcolor='#0E1117',
     )
-
-    fig.update_xaxes(tickformat="%d/%b<br>%H:%M")
 
     return fig
 
@@ -106,7 +150,7 @@ def networth_evolution(df):
         height=600,
         title=dict(text='Networth Evolution (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
-        legend=dict(x=0.7, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
+        legend=dict(x=1, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
         font=dict(family='Calibri', size=12, color='#666'),
         xaxis=dict(
             gridcolor='rgba(255, 255, 255, 0)',
@@ -148,7 +192,7 @@ def networth_evolution_each_day(df):
         height=600,
         title=dict(text='Networth Evolution Today if started on this day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
-        legend=dict(x=0.6, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
+        legend=dict(x=1, y=0.99, bordercolor='#333333', font=dict(color='#fff')),
         font=dict(family='Calibri', size=12, color='#666'),
         xaxis=dict(
             gridcolor='rgba(255, 255, 255, 0)',
@@ -164,7 +208,7 @@ def networth_evolution_each_day(df):
 
     return fig
 
-@st.cache
+@st.cache_data
 def threshold_summary(thresholds,df):
     results_dict = {'threshold': [], 'Low Exposure Strategy': [], 'High Exposure Strategy': []}
     for threshold in thresholds:
@@ -249,7 +293,6 @@ def automatizev2(starttime,price_open,price_close,prediction,threshold):
 
 def automatize(starttime,price_open,price_close,prediction,threshold):
  
-
     initial_df['signal'] = np.where(initial_df['Prediction'] / initial_df['Price Close'] - 1 > 0, 1, -1)
 
     pct_change = initial_df['Prediction'] / initial_df['Price Close'] - 1
@@ -413,10 +456,6 @@ def automatize(starttime,price_open,price_close,prediction,threshold):
     initial_df['BETTER ARMS with NO threshold'] = (initial_df['AMRS with NO threshold networth today if started on this day'] > initial_df['BTC HOLD networth today if started on this day']).astype(int)
     initial_df['BETTER ARMS with threshold'] = (initial_df['AMRS with threshold networth today if started on this day'] > initial_df['BTC HOLD networth today if started on this day']).astype(int)
     initial_df['BETTER ARMS  with threshold and ss'] = (initial_df['AMRSwith threshold and ss networth today if started on this day'] > initial_df['BTC HOLD networth today if started on this day']).astype(int)
-
-    initial_df['green_values'] = np.where((initial_df['return of btc'] < 0) & (initial_df['return of portfolio 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] == 0), initial_df['return of btc'], np.nan) * 100
-    initial_df['red_values'] = np.where((initial_df['return of btc'] > 0) & (initial_df['return of portfolio 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] == 0), initial_df['return of btc'], np.nan) * 100
-    initial_df['yellow_values'] = np.where((initial_df['green_values'].isnull()) & (initial_df['red_values'].isnull()), initial_df['return of btc'], np.nan) * 100
 
     return initial_df
 
@@ -956,6 +995,8 @@ def format_dataframe_values(df):
         formatted_df[col] = formatted_df[col].apply(lambda x: f"${x:.2f}")
     return formatted_df
 
+if 'tab' not in st.session_state:
+    st.session_state.tab = "Upload & Run"
 if 'history' not in st.session_state:
     st.session_state.history = []
 
@@ -963,7 +1004,7 @@ if selected_tab == "Upload & Run":
     st.sidebar.title("Configuration")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    threshold = st.sidebar.number_input("Enter a number:", min_value=0.0,step=0.1,format='%2f')
+    threshold = st.sidebar.number_input("Define your threshold:", min_value=0.0,step=0.1,format='%2f')
     threshold_decimal = threshold / 100
 
     uploaded_file = st.sidebar.file_uploader("Drag and drop your file", type=['csv','xlsx','xlsm'])
@@ -972,6 +1013,13 @@ if selected_tab == "Upload & Run":
     f'<div class="top-right" style="color:#3dfd9f">Defined Threshold: <strong style="color:#ffffff">{threshold}%</strong></div>',
     unsafe_allow_html=True,
     )
+    default_strategy = "High Exposure Strategy"
+
+    selected_strategy = st.sidebar.selectbox("BTC Performance Strategy:", strategies, index=strategies.index(default_strategy), key='strategy_selection')
+
+    submit_button = st.sidebar.button("Submit")
+
+
 
     if uploaded_file:
         st.markdown(
@@ -979,7 +1027,6 @@ if selected_tab == "Upload & Run":
         unsafe_allow_html=True,
         )
         st.markdown("<br>", unsafe_allow_html=True)
-    submit_button = st.sidebar.button("Submit")
 
     if uploaded_file is not None:
         if uploaded_file.name.endswith('.csv'):
@@ -1050,9 +1097,10 @@ if selected_tab == "Upload & Run":
         first_strategy_df = first_strategy(important_scores_df_21,important_scores_df_22)
         second_strategy_df = second_strategy(important_scores_df_21,important_scores_df_22)
         third_strategy_df = third_strategy(important_scores_df_21,important_scores_df_22)
+
         fig1 = networth_evolution(last_hour)
         fig2 = networth_evolution_each_day(last_hour)
-        fig3 = plot_pct_difference(main_df)
+        fig3 = plot_pct_difference(main_df,selected_strategy)
 
     
     table_style = """
@@ -1088,26 +1136,9 @@ if selected_tab == "Upload & Run":
             background-color: #00C07F;
         }
     </style>
-"""
+""" 
 
     if submit_button:
-
-        # Save results in session
-        result = {
-            'df_thresholds': df_thresholds,
-            'first_strategy_df': first_strategy_df,
-            'second_strategy_df': second_strategy_df,
-            'third_strategy_df': third_strategy_df,
-            'return_volatility_df': return_volatility_df,
-            'fig1': fig1,
-            'fig2': fig2,
-            'fig3': fig3
-        }
-
-        timestamp = time.ctime()
-        history_entry = {'file_name': uploaded_file.name, 'timestamp': timestamp,'result': result,'threshold': threshold}
-        st.session_state.history.append(history_entry)
-        st.write("Results saved to history.")
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1129,8 +1160,6 @@ if selected_tab == "Upload & Run":
         col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
         col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
 
-
-
         col1.write(f'{table_style}{table2_html}', unsafe_allow_html=True)
         col2.write(f'{table_style}{table3_html}', unsafe_allow_html=True)
         col3.write(f'{table_style}{table4_html}', unsafe_allow_html=True)
@@ -1141,10 +1170,27 @@ if selected_tab == "Upload & Run":
         st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
         st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
 
+        # Save results in session
+        result = {
+            'df_thresholds': df_thresholds,
+            'first_strategy_df': first_strategy_df,
+            'second_strategy_df': second_strategy_df,
+            'third_strategy_df': third_strategy_df,
+            'return_volatility_df': return_volatility_df,
+            'fig1': fig1,
+            'fig2': fig2,
+            'fig3': fig3
+        }
 
-elif selected_tab == "History":
+        timestamp = time.ctime()
+        history_entry = {'file_name': uploaded_file.name, 'timestamp': timestamp,'result': result,'threshold': threshold}
+        st.session_state.history.append(history_entry)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.write("Results saved to history.")
 
 
+if selected_tab == "History":
+    
     if st.session_state.history:
         df = pd.DataFrame(st.session_state.history, columns=['file_name', 'timestamp','threshold'])
         
@@ -1182,3 +1228,8 @@ elif selected_tab == "History":
             st.write(selected_result['return_volatility_df'])
     else:
         st.write("No history found.")
+
+
+
+
+
