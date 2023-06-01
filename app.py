@@ -9,7 +9,11 @@ import plotly.graph_objs as go
 import openpyxl
 import requests
 import time
+import plotly.io as pio
 from session import Session
+from github import Github
+import datetime
+import plotly.offline as pyo
 
 pd.options.mode.chained_assignment = None  
 
@@ -88,15 +92,15 @@ def plot_pct_difference(df, selected_strategy):
 
     fig = go.Figure()
 
-    green_trace = go.Bar(x=df['StartTime'], y=green_values, name='BTC down and {} = 0'.format(selected_strategy), marker_color='green', opacity=1)
+    green_trace = go.Bar(x=df['StartTime'], y=green_values, name='BTC down and {} = 0'.format(selected_strategy), marker_color='#228B22', opacity=1)
     green_trace.update(hovertemplate='Date: %{x|%d %b %Y}<br>Difference: %{y:.2f}')
     fig.add_trace(green_trace)
 
-    red_trace = go.Bar(x=df['StartTime'], y=red_values, name='BTC up and {} = 0'.format(selected_strategy),marker_color='red', opacity=1)
+    red_trace = go.Bar(x=df['StartTime'], y=red_values, name='BTC up and {} = 0'.format(selected_strategy),marker_color='red', opacity=0.5)
     red_trace.update(hovertemplate='Date: %{x|%d %b %Y}<br>Difference: %{y:.2f}')
     fig.add_trace(red_trace)
 
-    yellow_trace = go.Bar(x=df['StartTime'], y=yellow_values, name='ARMS = BTC', marker_color='yellow', opacity=1)
+    yellow_trace = go.Bar(x=df['StartTime'], y=yellow_values, name='ARMS = BTC', marker_color='yellow', opacity=0.5)
     yellow_trace.update(hovertemplate='Date: %{x|%d %b %Y}<br>Difference: %{y:.2f}')
     fig.add_trace(yellow_trace)
 
@@ -121,6 +125,7 @@ def plot_pct_difference(df, selected_strategy):
                    tick0=df['StartTime'].min(),
                    dtick="M1"),
         plot_bgcolor='#0E1117',
+        paper_bgcolor='#0E1117',
     )
 
     return fig
@@ -161,7 +166,8 @@ def networth_evolution(df):
             nticks=20           
         ),
         yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f'),
-        plot_bgcolor='#0E1117'
+        plot_bgcolor='#0E1117',
+        paper_bgcolor='#0E1117',
     )
 
     return fig
@@ -203,7 +209,8 @@ def networth_evolution_each_day(df):
             nticks=20           
         ),
         yaxis=dict(gridcolor='rgba(255, 255, 255, 0)', linewidth=4,tickprefix='$',tickformat='.0f'),
-        plot_bgcolor='#0E1117'
+        plot_bgcolor='#0E1117',
+        paper_bgcolor='#0E1117',
     )
 
     return fig
@@ -550,6 +557,7 @@ def safe_round_and_format(x):
 
 def return_volatility(df):
 
+    last_hour_day['StartTime'] = pd.to_datetime(last_hour_day['StartTime']).dt.date
     returns = pd.DataFrame({
         'StartTime': last_hour_day['StartTime'].to_list(), 
         '2STEPS LONG WITH NO THRESHOLD': format_percentage1(pd.Series((last_hour_day['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY RATIO']*100).to_list())),
@@ -580,7 +588,6 @@ def return_volatility(df):
     return_vol = return_vol.reset_index(drop = True)
     return_vol.index = return_vol.index + 1
     return_vol = return_vol.transpose()
-
 
     return return_vol
 
@@ -995,6 +1002,98 @@ def format_dataframe_values(df):
         formatted_df[col] = formatted_df[col].apply(lambda x: f"${x:.2f}")
     return formatted_df
 
+def save_results_to_html():
+    # Convert the Plotly plots to HTML
+    plot1_html = pyo.plot(fig1, include_plotlyjs=False, output_type='div')
+    plot2_html = pyo.plot(fig2, include_plotlyjs=False, output_type='div')
+    plot3_html = pyo.plot(fig3, include_plotlyjs=False, output_type='div')
+
+    # Creating the final HTML content
+    html_content = f'''
+    {table_style}
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Results</title>
+        <style>
+            body {{
+                background-color: #0E1117;
+                color: white;
+                font-family: Arial, sans-serif;
+            }}
+            .box {{
+                display: flex;
+                justify-content: space-around;
+                padding: 10px;
+                background-color: #262730;
+                border-radius: 10px;
+                margin: 20px;
+                box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+            }}
+            .boxes-container {{
+                display: flex;
+                justify-content: space-around;
+                flex-wrap: wrap;
+            }}
+            h3 {{
+                color: #3dfd9f;
+            }}
+        </style>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    </head>
+    <body>
+        <h3>Threshold Summary</h3>
+        {table1_html}
+        {plot1_html}
+        {plot2_html}
+        {plot3_html}
+        
+        
+        <div class="boxes-container">
+            <h3>Trading Strategy</h3>
+            <div class="box">
+                {table2_html}
+            </div>
+            <h3>Low Exposure Strategy</h3>
+            <div class="box">
+                {table3_html}
+            </div>
+            <h3>High Exposure Strategy</h3>
+            <div class="box">
+                {table4_html}
+            </div>
+        </div>
+        
+        <h3>Return and Volatility</h3>
+        {table5_html}
+    </body>
+    </html>
+    '''
+    return html_content
+
+# Setting up GitHub credentials
+GITHUB_TOKEN = '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'
+REPOSITORY_NAME = 'dashstatstest'
+
+# Authenticating GitHub 
+g = Github(GITHUB_TOKEN)
+repo = g.get_user().get_repo(REPOSITORY_NAME)
+
+def save_run_to_github(threshold, filename, content):
+    # Creating a timestamp and format the folder name
+    now = datetime.datetime.now().strftime("%Y-%m-%d")
+    folder_name = f'runs/{now}_threshold-{threshold}_file-{filename}/result.html'
+    try:
+        file = repo.get_contents(folder_name)
+        print(f"File '{folder_name}' exists; updating its content")
+        repo.update_file(file.path, f"Update run {now} result", content.encode(), file.sha)
+    except:
+        print(f"File '{folder_name}' does not exist; creating a new one")
+        repo.create_file(folder_name, f"Create run {now} result", content.encode())
+
+    print(f"Saved '{folder_name}' to the main branch in repository '{repo.full_name}'")
+
+
 if 'tab' not in st.session_state:
     st.session_state.tab = "Upload & Run"
 if 'history' not in st.session_state:
@@ -1144,11 +1243,12 @@ if selected_tab == "Upload & Run":
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True)
         
-        table1_html = df_thresholds.to_html(classes="table_full_width")
-        table2_html = first_strategy_df.to_html(classes="table_full_width")
-        table3_html = second_strategy_df.to_html(classes="table_full_width")
-        table4_html = third_strategy_df.to_html(classes="table_full_width")
-        table5_html = return_volatility_df.to_html(classes="table_full_width")
+        table1_html = df_thresholds.to_html(classes="dataframe")
+        table2_html = first_strategy_df.to_html(classes="dataframe")
+        table3_html = second_strategy_df.to_html(classes="dataframe")
+        table4_html = third_strategy_df.to_html(classes="dataframe")
+        table5_html = return_volatility_df.to_html(classes="dataframe")
+
         st.write(f'{table_style}{table1_html}', unsafe_allow_html=True)
         st.plotly_chart(fig1)
         st.plotly_chart(fig2)
@@ -1188,6 +1288,12 @@ if selected_tab == "Upload & Run":
         st.markdown("<br>", unsafe_allow_html=True)
         st.write("Results saved to history.")
 
+        # Save the generated results as an HTML string
+        html_content = save_results_to_html()
+
+        # Save the generated results to GitHub
+        run_index = len(st.session_state.history) - 1
+        save_run_to_github(threshold,uploaded_file.name,html_content)
 
 if selected_tab == "History":
     
@@ -1228,8 +1334,3 @@ if selected_tab == "History":
             st.write(selected_result['return_volatility_df'])
     else:
         st.write("No history found.")
-
-
-
-
-
