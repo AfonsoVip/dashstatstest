@@ -1039,6 +1039,7 @@ def save_results_to_html():
             }}
             h3 {{
                 color: #3dfd9f;
+                text-align: center;
             }}
         </style>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -1049,7 +1050,7 @@ def save_results_to_html():
         {plot1_html}
         {plot2_html}
         {plot3_html}
-        
+    
         
         <div class="boxes-container">
             <h3>Trading Strategy</h3>
