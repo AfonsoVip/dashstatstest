@@ -1072,7 +1072,7 @@ def save_results_to_html():
     return html_content
 
 # Setting up GitHub credentials
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = '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'
 REPOSITORY_NAME = 'dashstatstest'
 
 # Authenticating GitHub 
