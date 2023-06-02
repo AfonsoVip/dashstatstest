@@ -1046,14 +1046,9 @@ def save_results_to_html():
     <body>
         <h3>Threshold Summary</h3>
         {table1_html}
-         <div class="box">
-            {plot1_html}
-        </div>
-         <div class="box">
-            {plot2_html}
-         <div class="box">
-            {plot3_html}
-        </div>
+        {plot1_html}
+        {plot2_html}
+        {plot3_html}
         <div class="boxes-container">
             <h3>Trading Strategy</h3>
             <div class="box">
