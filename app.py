@@ -1039,7 +1039,6 @@ def save_results_to_html():
             }}
             h3 {{
                 color: #3dfd9f;
-                text-align: center;
             }}
         </style>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -1047,11 +1046,14 @@ def save_results_to_html():
     <body>
         <h3>Threshold Summary</h3>
         {table1_html}
-        {plot1_html}
-        {plot2_html}
-        {plot3_html}
-    
-        
+         <div class="box">
+            {plot1_html}
+        </div>
+         <div class="box">
+            {plot2_html}
+         <div class="box">
+            {plot3_html}
+        </div>
         <div class="boxes-container">
             <h3>Trading Strategy</h3>
             <div class="box">
@@ -1066,7 +1068,6 @@ def save_results_to_html():
                 {table4_html}
             </div>
         </div>
-        
         <h3>Return and Volatility</h3>
         {table5_html}
     </body>
