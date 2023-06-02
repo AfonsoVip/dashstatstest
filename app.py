@@ -14,6 +14,8 @@ from session import Session
 from github import Github
 import datetime
 import plotly.offline as pyo
+import os 
+
 
 pd.options.mode.chained_assignment = None  
 
@@ -1072,7 +1074,7 @@ def save_results_to_html():
     return html_content
 
 # Setting up GitHub credentials
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 REPOSITORY_NAME = 'dashstatstest'
 
 # Authenticating GitHub 
