@@ -44,7 +44,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-selected_tab = st.sidebar.radio("Select tab", ["Upload & Run", "History"], key='tab_select')
+selected_tab = st.sidebar.radio("Select tab", ["Upload & Run", "History",'Comparison'], key='tab_select')
 
 
 st.markdown("""
