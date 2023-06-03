@@ -14,6 +14,8 @@ from session import Session
 from github import Github
 import datetime
 import plotly.offline as pyo
+import os 
+
 
 pd.options.mode.chained_assignment = None  
 
@@ -42,7 +44,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-selected_tab = st.sidebar.radio("Select tab", ["Upload & Run", "History",'Comparison'], key='tab_select')
+selected_tab = st.sidebar.radio("Select tab", ["Upload & Run", "History"], key='tab_select')
 
 
 st.markdown("""
@@ -1047,8 +1049,6 @@ def save_results_to_html():
         {plot1_html}
         {plot2_html}
         {plot3_html}
-        
-        
         <div class="boxes-container">
             <h3>Trading Strategy</h3>
             <div class="box">
@@ -1063,7 +1063,6 @@ def save_results_to_html():
                 {table4_html}
             </div>
         </div>
-        
         <h3>Return and Volatility</h3>
         {table5_html}
     </body>
@@ -1072,10 +1071,10 @@ def save_results_to_html():
     return html_content
 
 # Setting up GitHub credentials
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 REPOSITORY_NAME = 'dashstatstest'
 
-# Authenticating GitHub
+# Authenticating GitHub 
 g = Github(GITHUB_TOKEN)
 repo = g.get_user().get_repo(REPOSITORY_NAME)
 
@@ -1334,8 +1333,8 @@ if selected_tab == "History":
             st.write(selected_result['return_volatility_df'])
     else:
         st.write("No history found.")
-
-
+        
+    
 if selected_tab == "Comparison":
     threshold = st.sidebar.number_input("Define your threshold:", min_value=0.0,step=0.1,format='%2f')
     threshold_decimal = threshold / 100
