@@ -1333,3 +1333,279 @@ if selected_tab == "History":
             st.write(selected_result['return_volatility_df'])
     else:
         st.write("No history found.")
+        
+if selected_tab == "Comparison":
+    threshold = st.sidebar.number_input("Define your threshold:", min_value=0.0,step=0.1,format='%2f')
+    threshold_decimal = threshold / 100
+    st.markdown(
+    f'<div class="top-right" style="color:#3dfd9f">Defined Threshold: <strong style="color:#ffffff">{threshold}%</strong></div>',
+    unsafe_allow_html=True,
+    )
+    default_strategy = "High Exposure Strategy"
+    selected_strategy = st.sidebar.selectbox("BTC Performance Strategy:", strategies, index=strategies.index(default_strategy), key='strategy_selection')
+    first = st.sidebar.file_uploader("Drag and drop your first model", type=['csv','xlsx','xlsm'])
+    st.sidebar.write('vs')
+    second = st.sidebar.file_uploader("Drag and drop your second model", type=['csv','xlsx','xlsm'])
+    compare = st.sidebar.button("Compare")
+
+    if first is not None:
+        if first.name.endswith('.csv'):
+                initial_df = pd.read_csv(first, encoding='utf-8')
+                if not is_correct_format(initial_df):
+                # Reset the uploaded file to the start
+                    first.seek(0)
+                    initial_df = pd.read_csv(first, encoding='utf-8',header=None)
+                    # Convert the first column values to text
+                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
+                    # Create a new DataFrame from the text
+                    initial_df = pd.read_csv(StringIO(csv_text))
+        elif first.name.endswith(('.xlsx', '.xlsm')):
+            initial_df = pd.read_excel(first, engine='openpyxl')
+            if not is_correct_format(initial_df):
+                # Reset the uploaded file to the start
+                    first.seek(0)
+                    initial_df = pd.read_excel(first, engine='openpyxl',header=None)
+                    # Convert the first column values to text
+                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
+                    # Create a new DataFrame from the text
+                    initial_df = pd.read_csv(StringIO(csv_text))
+        else:
+            st.write("Unsupported file type. Please upload a CSV, XLSX, or XLSM file.")
+        initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
+        initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
+        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') & (initial_df['StartTime'] <= '2022-12-31 23:00:00')
+        df_start = initial_df.copy()
+        initial_df = initial_df.loc[mask]
+        initial_df = initial_df.reset_index(drop=True)
+        
+        df_thresholds_first = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
+        df_thresholds_first = format_dataframe_values(df_thresholds_first)
+        main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
+        
+        last_hour = last_hour_df(main_df)
+        last_hour_day = last_hour_and_day_df(main_df)
+        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
+    
+        df_21 = filter_2021_df(main_df)
+        df_22 = filter_2022_df(main_df)
+        df_21_last_hour = filter_2021_last_hour_df(last_hour)
+        df_22_last_hour = filter_2022_last_hour_df(last_hour)
+        df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
+        df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
+        
+        return_volatility_df_first = return_volatility(last_hour)
+
+        important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
+        important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
+        important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
+
+        important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df['BTC HOLD'] = format_percentage(important_scores_df['BTC HOLD'])
+
+        important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df_21['BTC HOLD'] = format_percentage(important_scores_df_21['BTC HOLD'])
+
+        important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
+
+        first_strategy_df_first = first_strategy(important_scores_df_21,important_scores_df_22)
+        second_strategy_df_first = second_strategy(important_scores_df_21,important_scores_df_22)
+        third_strategy_df_first = third_strategy(important_scores_df_21,important_scores_df_22)
+
+        fig1_first = networth_evolution(last_hour)
+        fig2_first = networth_evolution_each_day(last_hour)
+        fig3_first = plot_pct_difference(main_df,selected_strategy)
+    
+    if second is not None:
+        if second.name.endswith('.csv'):
+                initial_df = pd.read_csv(second, encoding='utf-8')
+                if not is_correct_format(initial_df):
+                # Reset the uploaded file to the start
+                    second.seek(0)
+                    initial_df = pd.read_csv(second, encoding='utf-8',header=None)
+                    # Convert the first column values to text
+                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
+                    # Create a new DataFrame from the text
+                    initial_df = pd.read_csv(StringIO(csv_text))
+        elif second.name.endswith(('.xlsx', '.xlsm')):
+            initial_df = pd.read_excel(second, engine='openpyxl')
+            if not is_correct_format(initial_df):
+                # Reset the uploaded file to the start
+                    second.seek(0)
+                    initial_df = pd.read_excel(second, engine='openpyxl',header=None)
+                    # Convert the first column values to text
+                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
+                    # Create a new DataFrame from the text
+                    initial_df = pd.read_csv(StringIO(csv_text))
+        else:
+            st.write("Unsupported file type. Please upload a CSV, XLSX, or XLSM file.")
+        initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
+        initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
+        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') & (initial_df['StartTime'] <= '2022-12-31 23:00:00')
+        df_start = initial_df.copy()
+        initial_df = initial_df.loc[mask]
+        initial_df = initial_df.reset_index(drop=True)
+        
+        df_thresholds_second = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
+        df_thresholds_second = format_dataframe_values(df_thresholds_second)
+        main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
+        
+        last_hour = last_hour_df(main_df)
+        last_hour_day = last_hour_and_day_df(main_df)
+        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
+    
+        df_21 = filter_2021_df(main_df)
+        df_22 = filter_2022_df(main_df)
+        df_21_last_hour = filter_2021_last_hour_df(last_hour)
+        df_22_last_hour = filter_2022_last_hour_df(last_hour)
+        df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
+        df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
+        
+        return_volatility_df_second = return_volatility(last_hour)
+
+        important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
+        important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
+        important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
+
+        important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df['BTC HOLD'] = format_percentage(important_scores_df['BTC HOLD'])
+
+        important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df_21['BTC HOLD'] = format_percentage(important_scores_df_21['BTC HOLD'])
+
+        important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
+
+        first_strategy_df_second = first_strategy(important_scores_df_21,important_scores_df_22)
+        second_strategy_df_second = second_strategy(important_scores_df_21,important_scores_df_22)
+        third_strategy_df_second = third_strategy(important_scores_df_21,important_scores_df_22)
+
+        fig1_second = networth_evolution(last_hour)
+        fig2_second = networth_evolution_each_day(last_hour)
+        fig3_second = plot_pct_difference(main_df,selected_strategy)
+
+    table_style = """
+    <style>
+        table.dataframe {
+            width: 100%;
+            background-color: #0F1117;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+        table.dataframe td,
+        table.dataframe th {
+            text-align: center;
+            border: 1px solid #2a2d34;
+            padding: 2px;
+            font-size: 15px;
+            line-height: 1.2;
+            color: white;
+        }
+        table.dataframe thead th {
+            background-color: #262730;
+            color: white;
+            font-weight: bold;
+            border-bottom: 2px solid #2a2d34;
+        }
+        table.dataframe tbody tr {
+            background-color: #0F1117;
+        }
+        table.dataframe tbody tr:hover {
+            background-color: #00C07F;
+        }
+    </style>
+""" 
+
+    if compare:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True)
+        
+        table1_html = df_thresholds_first.to_html(classes="dataframe")
+        table2_html = first_strategy_df_first.to_html(classes="dataframe")
+        table3_html = second_strategy_df_first.to_html(classes="dataframe")
+        table4_html = third_strategy_df_first.to_html(classes="dataframe")
+        table5_html = return_volatility_df_first.to_html(classes="dataframe")
+        table6_html = df_thresholds_second.to_html(classes="dataframe")
+        table7_html = first_strategy_df_second.to_html(classes="dataframe")
+        table8_html = second_strategy_df_second.to_html(classes="dataframe")
+        table9_html = third_strategy_df_second.to_html(classes="dataframe")
+        table10_html = return_volatility_df_second.to_html(classes="dataframe")
+
+        col1, col2 = st.columns(2)
+
+        col1.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
+        col1.write(f'{table_style}{table1_html}', unsafe_allow_html=True)
+        col2.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
+        col2.write(f'{table_style}{table6_html}', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
+        st.plotly_chart(fig2_first)
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
+        st.plotly_chart(fig2_second)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
+        st.plotly_chart(fig2_first)
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
+        st.plotly_chart(fig2_second)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
+        st.plotly_chart(fig3_first)
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
+        st.plotly_chart(fig3_second)
+
+        
+
+
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 22px;'>(First Model)</h3>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
+        col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
+        col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
+
+        col1.write(f'{table_style}{table2_html}', unsafe_allow_html=True)
+        col2.write(f'{table_style}{table3_html}', unsafe_allow_html=True)
+        col3.write(f'{table_style}{table4_html}', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 22px;'>(Second Model)</h3>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
+        col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
+        col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
+
+        col1.write(f'{table_style}{table7_html}', unsafe_allow_html=True)
+        col2.write(f'{table_style}{table8_html}', unsafe_allow_html=True)
+        col3.write(f'{table_style}{table9_html}', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility (First Model)</h3>", unsafe_allow_html=True)
+        st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility (Second Model)</h3>", unsafe_allow_html=True)
+        st.write(f'{table_style}{table10_html}', unsafe_allow_html=True)
