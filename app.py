@@ -244,12 +244,12 @@ def threshold_summary(thresholds, df):
         results_dict['High Exposure Strategy_2022'].append(nw_2_steps_long_with_threshold_and_selective_sell_22)
 
         # Calculate percentage differences for Low Exposure Strategy and High Exposure Strategy
-        results_dict['Low Exposure Strategy Percentage Difference 21'].append(((nw_2_steps_long_with_threshold_21 / 100 ) - 1) * 100)
-        results_dict['High Exposure Strategy Percentage Difference 21'].append(((nw_2_steps_long_with_threshold_and_selective_sell_21 / 100 ) - 1) * 100)
+        results_dict['Low Exposure Strategy Percentage Gain 21'].append(((nw_2_steps_long_with_threshold_21 / 100 ) - 1) * 100)
+        results_dict['High Exposure Strategy Percentage Gain 21'].append(((nw_2_steps_long_with_threshold_and_selective_sell_21 / 100 ) - 1) * 100)
 
         # Calculate percentage differences for Low Exposure Strategy and High Exposure Strategy
-        results_dict['Low Exposure Strategy Percentage Difference 22'].append(((nw_2_steps_long_with_threshold_22 / df22['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) - 1) * 100)
-        results_dict['High Exposure Strategy Percentage Difference 22'].append(((nw_2_steps_long_with_threshold_and_selective_sell_22 / df22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) - 1) * 100)
+        results_dict['Low Exposure Strategy Percentage Gain 22'].append(((nw_2_steps_long_with_threshold_22 / df22['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) - 1) * 100)
+        results_dict['High Exposure Strategy Percentage Gain 22'].append(((nw_2_steps_long_with_threshold_and_selective_sell_22 / df22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) - 1) * 100)
 
 
     results_df = pd.DataFrame(results_dict)
