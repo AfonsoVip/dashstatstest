@@ -1220,6 +1220,9 @@ def save_results_to_html():
     '''
     return html_content
 
+
+# Retrieve the token from Streamlit secrets
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 # Setting up GitHub credentials
 REPOSITORY_NAME = 'dashstatstest'
 
