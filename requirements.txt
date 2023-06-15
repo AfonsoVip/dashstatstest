@@ -9,4 +9,4 @@ requests==2.27.1
 gunicorn
 protobuf==3.20.0
 PyGithub
-json
+json5==0.9.6
