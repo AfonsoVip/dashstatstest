@@ -219,7 +219,7 @@ def networth_evolution_each_day(df):
 @st.cache_data
 def threshold_summary(thresholds, df):
     results_dict = {'threshold': [], 'Low Exposure Strategy': [], 'High Exposure Strategy': [], 'Low Exposure Strategy_2021': [], 'Low Exposure Strategy_2022': [], 'High Exposure Strategy_2021': [], 'High Exposure Strategy_2022': [],
-                    'Low Exposure Strategy Percentage Difference 21': [], 'High Exposure Strategy Percentage Difference 21': [], 'Low Exposure Strategy Percentage Difference 22': [], 'High Exposure Strategy Percentage Difference 22': []}
+                    'Low Exposure Strategy Percentage Gain 21': [], 'High Exposure Strategy Percentage Gain 21': [], 'Low Exposure Strategy Percentage Gain 22': [], 'High Exposure Strategy Percentage Gain 22': []}
 
     for threshold in thresholds:
         result = automatizev2(df_start, df_start['StartTime'], df_start['Price Open'], df_start['Price Close'], df_start['Prediction'], threshold)
