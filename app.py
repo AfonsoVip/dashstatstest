@@ -256,10 +256,10 @@ def threshold_summary(thresholds, df):
     results_df.set_index('threshold', inplace=True)
     results_df.index = results_df.index * 100
 
-    percentage_columns = ['Low Exposure Strategy Percentage Difference 21',
-                          'High Exposure Strategy Percentage Difference 21',
-                          'Low Exposure Strategy Percentage Difference 22',
-                          'High Exposure Strategy Percentage Difference 22']
+    percentage_columns = ['Low Exposure Strategy Percentage Gain 21',
+                          'High Exposure Strategy Percentage Gain 21',
+                          'Low Exposure Strategy Percentage Gain 22',
+                          'High Exposure Strategy Percentage Gain 22']
 
     results_df[percentage_columns] = results_df[percentage_columns].apply(format_percentage_normal)
 
