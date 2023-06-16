@@ -1014,7 +1014,7 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
 def important_scores_23(df,last_hour,last_day_of_the_year):
 
     # NW 2 STEPS LONG NO THRESHOLD
-    return_2023_first = last_day_of_the_year['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY OF THE YEAR RATIO'].iloc[0] * 100
+    return_2023_first = df_23['return of portfolio 2STEPS LONG WITH NO THRESHOL AND SELECTIVE SELL'].iloc[-1] * 100
     volatility_first = df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_first = ((df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_first = df_23['accuracy strategy with threshold'].mean() * 100
