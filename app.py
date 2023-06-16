@@ -1014,7 +1014,7 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
 def important_scores_23(df,last_hour,last_day_of_the_year):
 
     # NW 2 STEPS LONG NO THRESHOLD
-    return_2023_first = df_23['return of portfolio 2STEPS LONG WITH NO THRESHOL AND SELECTIVE SELL'].iloc[-1] * 100
+    return_2023_first = df_23_last_hour_last_day['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY RATIO'].iloc[0] * 100
     volatility_first = df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_first = ((df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_first = df_23['accuracy strategy with threshold'].mean() * 100
@@ -1032,7 +1032,7 @@ def important_scores_23(df,last_hour,last_day_of_the_year):
     percentagetime_sell_first = df_23['signal'].value_counts(normalize=True)[-1] * 100
 
      # NW 2STEPS LONG WITH THRESHOLD 
-    return_2023_second = last_day_of_the_year['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY OF THE YEAR RATIO'].iloc[0] * 100 
+    return_2023_second = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO'].iloc[0] * 100 
     volatility_second = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_second = ((df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_second = df_23['accuracy strategy with threshold'].mean() * 100
@@ -1050,7 +1050,7 @@ def important_scores_23(df,last_hour,last_day_of_the_year):
     percentagetime_sell_second = df_23['buy/hold/sell'].value_counts(normalize=True)[-1] * 100
 
     # NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL
-    return_2023_third = last_day_of_the_year['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY OF THE YEAR RATIO'].iloc[0] * 100
+    return_2023_third = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY RATIO'].iloc[0] * 100
     volatility_third = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].std() * 100
     annualized_sharpe_ratio_third = ((df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_third = df_23['accuracy strategy with threshold and selective sell'].mean() * 100
@@ -1068,7 +1068,7 @@ def important_scores_23(df,last_hour,last_day_of_the_year):
     percentagetime_sell_third = df_23['buy/hold/sell with selective sell'].value_counts(normalize=True)[-1] * 100
 
     #BTC HOLD
-    return_2023_forth = last_day_of_the_year['btc hold RATIO'].iloc[0] * 100
+    return_2023_forth = df_23_last_hour_last_day['btc hold LAST HOUR AND DAY RATIO'].iloc[0] * 100
     volatility_forth = df_23_last_hour['btc hold RATIO'].std() * 100
     annualized_sharpe_ratio_forth = ((df_23_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_23_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) * 100
     accuracy_strategy_forth = np.nan
