@@ -107,8 +107,8 @@ def plot_pct_difference(df, selected_strategy):
 
 
     fig.update_layout(
-        width=1500,
-        height=1000,
+        width=800,
+        height=600,
         yaxis=dict(title_text='Difference in Strategy', type='linear', showgrid=False),
         title=dict(text='{} vs BTC Performance'.format(selected_strategy), font=dict(color='#3dfd9f')),
         hovermode="x unified",
@@ -152,7 +152,7 @@ def networth_evolution(df):
 
     # Customizing the layout of the subplot
     fig.update_layout(
-        width=1500,    
+        width=1100,    
         height=600,
         title=dict(text='Networth Evolution (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
@@ -195,7 +195,7 @@ def networth_evolution_each_day(df):
 
     # Customizing the layout of the subplot
     fig.update_layout(
-        width=1500,
+        width=1100,
         height=600,
         title=dict(text='Networth Evolution Today if started on this day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
