@@ -33,3 +33,8 @@ class Session:
         records = cursor.fetchall()
         history = [{'id': row[0], 'file_name': row[1], 'timestamp': row[2], 'threshold': row[3], 'result': json.loads(row[4])} for row in records]
         return history
+
+    def delete_history_item(self, index):
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM history WHERE id=(?)", (index + 1,))
+        self.conn.commit()
