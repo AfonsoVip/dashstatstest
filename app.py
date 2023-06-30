@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import math as mt
 import numbers
+import plotly
 import plotly.subplots as sp
 import plotly.graph_objs as go
 import openpyxl
@@ -14,9 +15,8 @@ from session import Session
 from github import Github
 import datetime
 import plotly.offline as pyo
-import os 
-
-
+import json
+import os
 pd.options.mode.chained_assignment = None  
 
 
@@ -44,7 +44,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-selected_tab = st.sidebar.radio("Select tab", ["Upload & Run", "History"], key='tab_select')
+selected_tab = st.sidebar.radio("Select tab", ["Upload & Run", "History",'Comparison'], key='tab_select')
 
 
 st.markdown("""
@@ -108,8 +108,8 @@ def plot_pct_difference(df, selected_strategy):
 
 
     fig.update_layout(
-        width=1500,
-        height=1000,
+        width=800,
+        height=600,
         yaxis=dict(title_text='Difference in Strategy', type='linear', showgrid=False),
         title=dict(text='{} vs BTC Performance'.format(selected_strategy), font=dict(color='#3dfd9f')),
         hovermode="x unified",
@@ -153,7 +153,7 @@ def networth_evolution(df):
 
     # Customizing the layout of the subplot
     fig.update_layout(
-        width=1500,    
+        width=1000,    
         height=600,
         title=dict(text='Networth Evolution (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
@@ -196,7 +196,7 @@ def networth_evolution_each_day(df):
 
     # Customizing the layout of the subplot
     fig.update_layout(
-        width=1500,
+        width=1000,
         height=600,
         title=dict(text='Networth Evolution Today if started on this day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
@@ -218,25 +218,60 @@ def networth_evolution_each_day(df):
     return fig
 
 @st.cache_data
-def threshold_summary(thresholds,df):
-    results_dict = {'threshold': [], 'Low Exposure Strategy': [], 'High Exposure Strategy': []}
-    for threshold in thresholds:
-        result = automatizev2(df_start['StartTime'], df_start['Price Open'], df_start['Price Close'], df_start['Prediction'], threshold)
-        nw_2_steps_long_with_threshold = result['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]
-        nw_2_steps_long_with_threshold_and_selective_sell = result['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]
-        results_dict['threshold'].append(threshold)
-        results_dict['Low Exposure Strategy'].append(nw_2_steps_long_with_threshold)
-        results_dict['High Exposure Strategy'].append(nw_2_steps_long_with_threshold_and_selective_sell)
+def threshold_summary(thresholds, df):
+    results_dict = {'threshold': [],'Low ex %21': [], 'Low ex %22': [], 'Low ex %23': [], 'High ex %21': [],'High ex %22': [],'High ex %23': []}
 
+    for threshold in thresholds:
+        result = automatizev2(df_start, df_start['StartTime'], df_start['Price Open'], df_start['Price Close'], df_start['Prediction'], threshold)
+
+        df21 = filter_2021_df(result)
+        df22 = filter_2022_df(result)
+        df23 = filter_2023_df(result)
+
+        nw_2_steps_long_with_threshold_21 = df21['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]
+        nw_2_steps_long_with_threshold_22 = df22['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]
+        nw_2_steps_long_with_threshold_and_selective_sell_21 = df21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]
+        nw_2_steps_long_with_threshold_and_selective_sell_22 = df22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]
+        nw_2_steps_long_with_threshold_23 = df23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]
+        nw_2_steps_long_with_threshold_and_selective_sell_23 = df23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]
+
+        results_dict['threshold'].append(threshold)
+
+        # Calculate percentage differences for Low Exposure Strategy 
+        results_dict['Low ex %21'].append(((nw_2_steps_long_with_threshold_21 / 100 ) - 1) * 100)
+        results_dict['Low ex %22'].append(((nw_2_steps_long_with_threshold_22 / df22['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) - 1) * 100)
+        results_dict['Low ex %23'].append(((nw_2_steps_long_with_threshold_23 / df23['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) - 1) * 100)
+
+        # Calculate percentage differences for High Exposure Strategy
+        results_dict['High ex %21'].append(((nw_2_steps_long_with_threshold_and_selective_sell_21 / 100 ) - 1) * 100)
+        results_dict['High ex %22'].append(((nw_2_steps_long_with_threshold_and_selective_sell_22 / df22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) - 1) * 100)
+        results_dict['High ex %23'].append(((nw_2_steps_long_with_threshold_and_selective_sell_23 / df23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) - 1) * 100)
+
+    
     results_df = pd.DataFrame(results_dict)
     results_df.set_index('threshold', inplace=True)
     results_df.index = results_df.index * 100
+
+    percentage_columns = ['Low ex %21',
+                          'Low ex %22',
+                          'Low ex %23',
+                          'High ex %21',
+                          'High ex %22',
+                          'High ex %23']
+
+    results_df[percentage_columns] = results_df[percentage_columns].apply(format_percentage_normal)
+
     return results_df
 
+def format_percentage_normal(col):
+    return col.apply(lambda x: str(round(x, 2)) + '%' if isinstance(x, (int, float)) and not mt.isnan(x) else str(round(float(x), 2)) if str(x) != 'nan' else x)
 
-def automatizev2(starttime,price_open,price_close,prediction,threshold):
+
+def automatizev2(initial_df,starttime,price_open,price_close,prediction,threshold):
  
-
+    mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') 
+    initial_df = initial_df.loc[mask]
+    initial_df = initial_df.reset_index(drop=True)
     initial_df['signal'] = np.where(initial_df['Prediction'] / initial_df['Price Close'] - 1 > 0, 1, -1)
 
     pct_change = initial_df['Prediction'] / initial_df['Price Close'] - 1
@@ -551,17 +586,23 @@ def last_day_of_the_year_last_hour(df):
 
 def format_percentage(col):
     return col.apply(lambda x: str(round(x, 2)) + '%' if isinstance(x, (int, float)) and not mt.isnan(x) and col.tolist().index(x) != 2 else str(round(float(x), 2)) if str(x) != 'nan' else x)
+
 def safe_round_and_format(x):
     try:
         return str(round(x)) + '%'
     except (TypeError, ValueError):
         return ''
 
-def return_volatility(df):
+def format_start_time(datetime_obj):
+    if isinstance(datetime_obj, str):
+        return datetime_obj
+    if isinstance(datetime_obj, datetime.date):
+        return datetime_obj.strftime("%Y-%m-%d")
 
+def return_volatility(df):
     last_hour_day['StartTime'] = pd.to_datetime(last_hour_day['StartTime']).dt.date
     returns = pd.DataFrame({
-        'StartTime': last_hour_day['StartTime'].to_list(), 
+        'StartTime': last_hour_day['StartTime'].apply(format_start_time).to_list(),
         '2STEPS LONG WITH NO THRESHOLD': format_percentage1(pd.Series((last_hour_day['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY RATIO']*100).to_list())),
         '2STEPS LONG WITH THRESHOLD': format_percentage1(pd.Series((last_hour_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO']*100).to_list())),
         '2STEPS LONG WITH THRESHOLD and ss': format_percentage1(pd.Series((last_hour_day['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY RATIO']*100).to_list())),
@@ -569,7 +610,7 @@ def return_volatility(df):
     })
 
     volatilities = pd.DataFrame({
-        'StartTime': last_hour_day['StartTime'].to_list(), 
+        'StartTime': last_hour_day['StartTime'].apply(format_start_time).to_list(),
         '2STEPS LONG WITH NO THRESHOLD': format_percentage1(pd.Series(last_hour_day['volatility NW 2STEPS LONG WITH NO THRESHOLD'].to_list())),
         '2STEPS LONG WITH THRESHOLD': format_percentage1(pd.Series(last_hour_day['volatility NW 2STEPS LONG WITH THRESHOLD'].to_list())),
         '2STEPS LONG WITH THRESHOLD and ss': format_percentage1(pd.Series(last_hour_day['volatility NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].to_list())),
@@ -587,7 +628,7 @@ def return_volatility(df):
                                         ('Hold BTC Strategy', 'return'), ('', 'volatility')])
 
     return_vol.columns = columns
-    return_vol = return_vol.reset_index(drop = True)
+    return_vol = return_vol.reset_index(drop=True)
     return_vol.index = return_vol.index + 1
     return_vol = return_vol.transpose()
 
@@ -599,7 +640,6 @@ def format_percentage1(col):
 def important_scores(df,last_hour,last_day_of_the_year):
 
     # NW 2 STEPS LONG NO THRESHOLD
-
     return_s_first = ((last_day_of_the_year['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY OF THE YEAR'].iloc[-1] / 100) - 1) * 100
     volatility_first = last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_first = ((last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].mean() - 0.02/365) / (last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
@@ -683,9 +723,9 @@ def important_scores(df,last_hour,last_day_of_the_year):
     percentagetime_sell_forth = np.nan
     
 
-    index_column = ['return','volatility', 'annualized sharpe ratio', 'ACCURACY strategy', 'accuracy signals', 'BETTER ARMS',
+    index_column = ['return','volatility', 'annualized sharpe ratio', 'accuracy strategy', 'accuracy signals', 'better arms',
                 'difference from ATH', 'maximum daily gain', 'maximum daily loss', 'mean monthly return',
-                'best monthly return', 'worst month return', 'return 2021', 'return 2022', '%time in', '% buy',
+                'best monthly return', 'worst month return', 'return 2021', 'return 2022', '% time in', '% buy',
                 '% hold', '% sell']
 
     first_data = [return_s_first, volatility_first, annualized_sharpe_ratio_first, accuracy_strategy_first, accuracy_signals_first, better_arms_first, difference_from_ATH_first, maximum_daily_gain_first, maximum_daily_loss_first, mean_monthly_return_first, best_monthly_return_first, worst_monthly_return_first, return_2021_first, return_2022_first, percentagetime_in_first, percentagetime_buy_first, percentagetime_hold_first, percentagetime_sell_first]
@@ -720,6 +760,10 @@ def filter_2022_df(df):
     df_filter_22 = df.loc[mask]
     return df_filter_22
 
+def filter_2023_df(df):
+    mask = (df['StartTime'] >= '2023-01-01 00:00:00') & (df['StartTime'] <= '2023-12-31 23:00:00')
+    df_filter_23 = df.loc[mask]
+    return df_filter_23
 
 def filter_2021_2022_df(df):
     mask = (df['StartTime'] >= '2021-01-01 00:00:00') & (df['StartTime'] <= '202-12-31 23:00:00')
@@ -734,8 +778,8 @@ def filter_2021_last_hour_df(df):
 
 def filter_2021_last_hour_last_day(df):
     mask = (last_hour_day['StartTime'].dt.year == 2021) & (last_hour_day['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
-    df_filter_22_last_hour = last_hour_day.loc[mask]
-    return df_filter_22_last_hour
+    df_filter_21_last_hour = last_hour_day.loc[mask]
+    return df_filter_21_last_hour
 
 def filter_2022_last_hour_df(df):
     mask = (last_hour['StartTime'].dt.year == 2022) & (last_hour['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
@@ -746,6 +790,16 @@ def filter_2022_last_hour_last_day(df):
     mask = (last_hour_day['StartTime'].dt.year == 2022) & (last_hour_day['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
     df_filter_22_last_hour = last_hour_day.loc[mask]
     return df_filter_22_last_hour
+
+def filter_2023_last_hour_df(df):
+    mask = (last_hour['StartTime'].dt.year == 2023) & (last_hour['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
+    df_filter_23_last_hour = last_hour.loc[mask]
+    return df_filter_23_last_hour
+
+def filter_2023_last_hour_last_day(df):
+    mask = (last_hour_day['StartTime'].dt.year == 2023) & (last_hour_day['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
+    df_filter_23_last_hour = last_hour_day.loc[mask]
+    return df_filter_23_last_hour
 
 def important_scores_21(df,last_hour,last_day_of_the_year):
 
@@ -823,9 +877,9 @@ def important_scores_21(df,last_hour,last_day_of_the_year):
     percentagetime_hold_forth = np.nan
     percentagetime_sell_forth = np.nan
 
-    index_column = ['return','volatility', 'annualized sharpe ratio', 'ACCURACY strategy', 'accuracy signals', 'BETTER ARMS',
+    index_column = ['return','volatility', 'annualized sharpe ratio', 'accuracy strategy', 'accuracy signals', 'better arms',
                 'difference from ATH', 'maximum daily gain', 'maximum daily loss', 'mean monthly return',
-                'best monthly return', 'worst month return', '%time in', '% buy',
+                'best monthly return', 'worst month return', '% time in', '% buy',
                 '% hold', '% sell']
 
     first_data = [return_2021_first, volatility_first, annualized_sharpe_ratio_first, accuracy_strategy_first, accuracy_signals_first, better_arms_first, difference_from_ATH_first, maximum_daily_gain_first, 
@@ -927,9 +981,9 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
     percentagetime_hold_forth = np.nan
     percentagetime_sell_forth = np.nan
 
-    index_column = ['return','volatility', 'annualized sharpe ratio', 'ACCURACY strategy', 'accuracy signals', 'BETTER ARMS',
+    index_column = ['return','volatility', 'annualized sharpe ratio', 'accuracy strategy', 'accuracy signals', 'better arms',
                 'difference from ATH', 'maximum daily gain', 'maximum daily loss', 'mean monthly return',
-                'best monthly return', 'worst month return', '%time in', '% buy',
+                'best monthly return', 'worst month return', '% time in', '% buy',
                 '% hold', '% sell']
 
     first_data = [return_2022_first, volatility_first, annualized_sharpe_ratio_first, accuracy_strategy_first, accuracy_signals_first, better_arms_first, difference_from_ATH_first, maximum_daily_gain_first, 
@@ -955,15 +1009,128 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
 
     return important_scores
 
+def important_scores_23(df,last_hour,last_day_of_the_year):
+
+    # NW 2 STEPS LONG NO THRESHOLD
+    if not df_23_last_hour_last_day.empty:
+        return_2023_first = ((df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1] - df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[0]) / df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1])* 100
+    else:
+        return_2023_first = 0
+    volatility_first = df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std() * 100
+    annualized_sharpe_ratio_first = ((df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
+    accuracy_strategy_first = df_23['accuracy strategy with threshold'].mean() * 100
+    accuracy_signals_first = df_23['accuracy signals'].mean() * 100 
+    better_arms_first = df_23['BETTER ARMS with NO threshold'].mean() * 100 
+    difference_from_ATH_first = (df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1] / df_23['NW 2 STEPS LONG NO THRESHOLD'].max() - 1) * 100
+    maximum_daily_gain_first = df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].max() * 100
+    maximum_daily_loss_first = df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].min() * 100
+    mean_monthly_return_first = df_23_last_hour_last_day['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY RATIO'].mean() * 100
+    best_monthly_return_first = df_23_last_hour_last_day['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY RATIO'].max() * 100
+    worst_monthly_return_first = df_23_last_hour_last_day['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY RATIO'].min() * 100
+    percentagetime_in_first = df_23['in/out 2 STEPS LONG NO THRESHOLD'].mean() * 100
+    percentagetime_buy_first = df_23['signal'].value_counts(normalize=True)[1] * 100
+    percentagetime_hold_first = df_23['signal'].value_counts(normalize=True, dropna=False).get("missing_key", 0) * 100
+    percentagetime_sell_first = df_23['signal'].value_counts(normalize=True)[-1] * 100
+
+
+    # NW 2STEPS LONG WITH THRESHOLD
+    if not df_23.empty:
+        return_2023_second =  ((df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1] - df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) / df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]) * 100  
+    else:
+        return_2023_second = 0
+    volatility_second = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].std() * 100
+    annualized_sharpe_ratio_second = ((df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
+    accuracy_strategy_second = df_23['accuracy strategy with threshold'].mean() * 100
+    accuracy_signals_second = df_23['accuracy signals'].mean() * 100 
+    better_arms_second = df_23['BETTER ARMS with threshold'].mean() * 100 
+    difference_from_ATH_second = (df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1] / df_23['NW 2STEPS LONG WITH THRESHOLD'].max() - 1) * 100
+    maximum_daily_gain_second = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].max() * 100
+    maximum_daily_loss_second = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].min() * 100
+    mean_monthly_return_second = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO'].mean() * 100
+    best_monthly_return_second = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO'].max() * 100
+    worst_monthly_return_second = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD LAST HOUR AND DAY RATIO'].min() * 100
+    percentagetime_in_second = df_23['in/out 2STEPS LONG WITH THRESHOLD'].mean() * 100
+    percentagetime_buy_second = df_23['buy/hold/sell'].value_counts(normalize=True).get(1, 0) * 100
+    percentagetime_hold_second = df_23['buy/hold/sell'].value_counts(normalize=True)[0] * 100
+    percentagetime_sell_second = df_23['buy/hold/sell'].value_counts(normalize=True).get(-1, 0) * 100
+
+    # NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL
+    if not df_23_last_hour_last_day.empty:
+        return_2023_third = (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1] - df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) / (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]) * 100
+    else:
+        return_2023_third = 0
+    volatility_third = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].std() * 100
+    annualized_sharpe_ratio_third = ((df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].std()) * mt.sqrt(365)) 
+    accuracy_strategy_third = df_23['accuracy strategy with threshold and selective sell'].mean() * 100
+    accuracy_signals_third = df_23['accuracy signals'].mean() * 100
+    better_arms_third = df_23['BETTER ARMS  with threshold and ss'].mean() * 100
+    difference_from_ATH_third = (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1] / df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].max() - 1) * 100
+    maximum_daily_gain_third = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].max() * 100
+    maximum_daily_loss_third = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].min() * 100
+    mean_monthly_return_third = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY RATIO'].mean() * 100
+    best_monthly_return_third = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY RATIO'].max() * 100
+    worst_monthly_return_third = df_23_last_hour_last_day['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL LAST HOUR AND DAY RATIO'].min() * 100
+    percentagetime_in_third = df_23['in/out 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].mean() * 100
+    percentagetime_buy_third = df_23['buy/hold/sell with selective sell'].value_counts(normalize=True).get(1, 0) * 100
+    percentagetime_hold_third = df_23['buy/hold/sell with selective sell'].value_counts(normalize=True)[0] * 100
+    percentagetime_sell_third = df_23['buy/hold/sell with selective sell'].value_counts(normalize=True).get(-1, 0) * 100
+
+    #BTC HOLD
+    if not df_23_last_hour_last_day.empty:
+        return_2023_forth = ((df_23['btc hold'].iloc[-1] - df_23['btc hold'].iloc[0]) / df_23['btc hold'].iloc[-1])* 100
+    else:
+        return_2023_forth = 0
+    volatility_forth = df_23_last_hour['btc hold RATIO'].std() * 100
+    annualized_sharpe_ratio_forth = ((df_23_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_23_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) * 100
+    accuracy_strategy_forth = np.nan
+    accuracy_signals_forth = np.nan
+    better_arms_forth = np.nan
+    difference_from_ATH_forth = (df_23['btc hold'].iloc[-1] / df_23['btc hold'].max() - 1) * 100
+    maximum_daily_gain_forth = df_23_last_hour['btc hold RATIO'].max() * 100
+    maximum_daily_loss_forth = df_23_last_hour['btc hold RATIO'].min() * 100
+    mean_monthly_return_forth = df_23_last_hour_last_day['btc hold LAST HOUR AND DAY RATIO'].mean() * 100
+    best_monthly_return_forth = df_23_last_hour_last_day['btc hold LAST HOUR AND DAY RATIO'].max() * 100
+    worst_monthly_return_forth = df_23_last_hour_last_day['btc hold LAST HOUR AND DAY RATIO'].min() * 100
+    percentagetime_in_forth = np.nan
+    percentagetime_buy_forth = np.nan
+    percentagetime_hold_forth = np.nan
+    percentagetime_sell_forth = np.nan
+
+    index_column = ['return','volatility', 'annualized sharpe ratio', 'accuracy strategy', 'accuracy signals', 'better arms',
+                'difference from ATH', 'maximum daily gain', 'maximum daily loss', 'mean monthly return',
+                'best monthly return', 'worst month return', '% time in', '% buy',
+                '% hold', '% sell']
+
+    first_data = [return_2023_first, volatility_first, annualized_sharpe_ratio_first, accuracy_strategy_first, accuracy_signals_first, better_arms_first, difference_from_ATH_first, maximum_daily_gain_first, 
+    maximum_daily_loss_first, mean_monthly_return_first, best_monthly_return_first, worst_monthly_return_first, percentagetime_in_first, percentagetime_buy_first, percentagetime_hold_first, percentagetime_sell_first]
+
+    second_data = [return_2023_second,volatility_second,annualized_sharpe_ratio_second,accuracy_strategy_second,accuracy_signals_second,better_arms_second,difference_from_ATH_second,maximum_daily_gain_second,
+    maximum_daily_loss_second,mean_monthly_return_second,best_monthly_return_second,worst_monthly_return_second,percentagetime_in_second,percentagetime_buy_second,percentagetime_hold_second,
+    percentagetime_sell_second]
+
+    third_data = [return_2023_third,volatility_third,annualized_sharpe_ratio_third,accuracy_strategy_third,accuracy_signals_third,better_arms_third,difference_from_ATH_third,maximum_daily_gain_third,
+    maximum_daily_loss_third,mean_monthly_return_third,best_monthly_return_third,worst_monthly_return_third,percentagetime_in_third,percentagetime_buy_third,
+    percentagetime_hold_third,percentagetime_sell_third]
+
+    forth_data = [return_2023_forth,volatility_forth,annualized_sharpe_ratio_forth,accuracy_strategy_forth,accuracy_signals_forth,better_arms_forth,difference_from_ATH_forth,maximum_daily_gain_forth,maximum_daily_loss_forth,
+    mean_monthly_return_forth,best_monthly_return_forth,worst_monthly_return_forth,percentagetime_in_forth,percentagetime_buy_forth,percentagetime_hold_forth,
+    percentagetime_sell_forth]
+
+    important_scores = pd.DataFrame(columns=['NW 2STEPS LONG NO THRESHOLD'], index=index_column)
+    important_scores['NW 2STEPS LONG NO THRESHOLD'] = first_data
+    important_scores['NW 2STEPS LONG WITH THRESHOLD'] = second_data
+    important_scores['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = third_data
+    important_scores['BTC HOLD'] = forth_data
+
+    return important_scores
+
 def first_strategy(important_scores_21,important_scores_22):
 
     TWO_STEPS_LONG_NO_THRESHOLD = pd.DataFrame()
     TWO_STEPS_LONG_NO_THRESHOLD['2021'] = important_scores_df_21['NW 2STEPS LONG NO THRESHOLD']
     TWO_STEPS_LONG_NO_THRESHOLD['2022'] = important_scores_df_22['NW 2STEPS LONG NO THRESHOLD']
     TWO_STEPS_LONG_NO_THRESHOLD['2021-2022'] = important_scores_df['NW 2STEPS LONG NO THRESHOLD']
-    TWO_STEPS_LONG_NO_THRESHOLD = (TWO_STEPS_LONG_NO_THRESHOLD.style
-                .set_table_styles([{'selector': 'caption',
-                                    'props': [('font-weight', 'bold')]}]))
+    TWO_STEPS_LONG_NO_THRESHOLD['2023'] = important_scores_df_23['NW 2STEPS LONG NO THRESHOLD']
     return TWO_STEPS_LONG_NO_THRESHOLD
 
 def second_strategy(important_scores_21,important_scores_22):
@@ -972,9 +1139,7 @@ def second_strategy(important_scores_21,important_scores_22):
     TWO_STEPS_LONG_WITH_THRESHOLD['2021'] = important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD']
     TWO_STEPS_LONG_WITH_THRESHOLD['2022'] = important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD']
     TWO_STEPS_LONG_WITH_THRESHOLD['2021-2022'] = important_scores_df['NW 2STEPS LONG WITH THRESHOLD']
-    TWO_STEPS_LONG_WITH_THRESHOLD = (TWO_STEPS_LONG_WITH_THRESHOLD.style
-                .set_table_styles([{'selector': 'caption',
-                                    'props': [('font-weight', 'bold')]}]))
+    TWO_STEPS_LONG_WITH_THRESHOLD['2023'] = important_scores_df_23['NW 2STEPS LONG WITH THRESHOLD']
     return TWO_STEPS_LONG_WITH_THRESHOLD
 
 def third_strategy(important_scores_21,important_scores_22):
@@ -983,9 +1148,7 @@ def third_strategy(important_scores_21,important_scores_22):
     TWO_STEPS_LONG_WITH_THRESHOLD_and_SS['2021'] = important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL']
     TWO_STEPS_LONG_WITH_THRESHOLD_and_SS['2022'] = important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL']
     TWO_STEPS_LONG_WITH_THRESHOLD_and_SS['2021-2022'] = important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL']
-    TWO_STEPS_LONG_WITH_THRESHOLD_and_SS = (TWO_STEPS_LONG_WITH_THRESHOLD_and_SS.style
-                .set_table_styles([{'selector': 'caption',
-                                    'props': [('font-weight', 'bold')]}]))
+    TWO_STEPS_LONG_WITH_THRESHOLD_and_SS['2023'] = important_scores_df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL']
                                     
     return TWO_STEPS_LONG_WITH_THRESHOLD_and_SS
 
@@ -998,10 +1161,11 @@ def is_correct_format(df):
     return all(column in df.columns for column in expected_columns)
 
 
-def format_dataframe_values(df):
+def format_dataframe_values(df, num_columns=6):
     formatted_df = df.copy()
-    for col in formatted_df.columns:
-        formatted_df[col] = formatted_df[col].apply(lambda x: f"${x:.2f}")
+    # Only loop through the first 'num_columns' columns
+    for col in formatted_df.columns[:num_columns]:
+        formatted_df[col] = formatted_df[col].apply(lambda x: f"${x:.2f}" if isinstance(x, (int, float)) else x)
     return formatted_df
 
 def save_results_to_html():
@@ -1049,20 +1213,17 @@ def save_results_to_html():
         {plot1_html}
         {plot2_html}
         {plot3_html}
+        
+        
         <div class="boxes-container">
             <h3>Trading Strategy</h3>
-            <div class="box">
-                {table2_html}
-            </div>
+            {table2_html}
             <h3>Low Exposure Strategy</h3>
-            <div class="box">
-                {table3_html}
-            </div>
+            {table3_html}
             <h3>High Exposure Strategy</h3>
-            <div class="box">
-                {table4_html}
-            </div>
+            {table4_html}
         </div>
+        
         <h3>Return and Volatility</h3>
         {table5_html}
     </body>
@@ -1091,7 +1252,6 @@ def save_run_to_github(threshold, filename, content):
         repo.create_file(folder_name, f"Create run {now} result", content.encode())
 
     print(f"Saved '{folder_name}' to the main branch in repository '{repo.full_name}'")
-
 
 if 'tab' not in st.session_state:
     st.session_state.tab = "Upload & Run"
@@ -1151,31 +1311,38 @@ if selected_tab == "Upload & Run":
             st.write("Unsupported file type. Please upload a CSV, XLSX, or XLSM file.")
         initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
         initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
-        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') & (initial_df['StartTime'] <= '2022-12-31 23:00:00')
+        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00')
         df_start = initial_df.copy()
         initial_df = initial_df.loc[mask]
         initial_df = initial_df.reset_index(drop=True)
         
         df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
-        df_thresholds = format_dataframe_values(df_thresholds)
+        df_thresholds = format_dataframe_values(df_thresholds, num_columns=6)
+        
+        # df_thresholds = format_dataframe_values(df_thresholds)
         main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
         
         last_hour = last_hour_df(main_df)
         last_hour_day = last_hour_and_day_df(main_df)
-        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
+        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)  
     
         df_21 = filter_2021_df(main_df)
         df_22 = filter_2022_df(main_df)
+        df_23 = filter_2023_df(main_df)
         df_21_last_hour = filter_2021_last_hour_df(last_hour)
         df_22_last_hour = filter_2022_last_hour_df(last_hour)
+        df_23_last_hour = filter_2023_last_hour_df(last_hour)
         df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
         df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
+        df_23_last_hour_last_day = filter_2023_last_hour_last_day(last_hour_day)
+
         
         return_volatility_df = return_volatility(last_hour)
 
         important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
         important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
         important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
+        important_scores_df_23 = important_scores_23(main_df,last_hour,last_day_of_the_year)
 
         important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
         important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
@@ -1191,6 +1358,11 @@ if selected_tab == "Upload & Run":
         important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
         important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
         important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
+
+        important_scores_df_23['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_23['NW 2STEPS LONG NO THRESHOLD'])
+        important_scores_df_23['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_23['NW 2STEPS LONG WITH THRESHOLD'])
+        important_scores_df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
+        important_scores_df_23['BTC HOLD'] = format_percentage(important_scores_df_23['BTC HOLD'])
 
         first_strategy_df = first_strategy(important_scores_df_21,important_scores_df_22)
         second_strategy_df = second_strategy(important_scores_df_21,important_scores_df_22)
@@ -1217,9 +1389,10 @@ if selected_tab == "Upload & Run":
             text-align: center;
             border: 1px solid #2a2d34;
             padding: 2px;
-            font-size: 15px;
+            font-size: 13px;
             line-height: 1.2;
             color: white;
+            width: 90px;
         }
         table.dataframe thead th {
             background-color: #262730;
@@ -1269,21 +1442,26 @@ if selected_tab == "Upload & Run":
         st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
         st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
 
-        # Save results in session
-        result = {
-            'df_thresholds': df_thresholds,
-            'first_strategy_df': first_strategy_df,
-            'second_strategy_df': second_strategy_df,
-            'third_strategy_df': third_strategy_df,
-            'return_volatility_df': return_volatility_df,
-            'fig1': fig1,
-            'fig2': fig2,
-            'fig3': fig3
-        }
-
+         # Save results to database
+        file_name = uploaded_file.name
         timestamp = time.ctime()
-        history_entry = {'file_name': uploaded_file.name, 'timestamp': timestamp,'result': result,'threshold': threshold}
-        st.session_state.history.append(history_entry)
+
+        # Save results to database
+        result = {
+            'file_name': uploaded_file.name,
+            'timestamp': time.ctime(),
+            'threshold': threshold,
+            'df_thresholds': df_thresholds.reset_index().to_json(orient='split'),
+            'first_strategy_df': first_strategy_df.reset_index().to_json(orient='split'),
+            'second_strategy_df': second_strategy_df.reset_index().to_json(orient='split'),
+            'third_strategy_df': third_strategy_df.reset_index().to_json(orient='split'),
+            'return_volatility_df': return_volatility_df.reset_index().to_json(orient='split'),
+            'fig1': json.dumps(fig1, cls=plotly.utils.PlotlyJSONEncoder),
+            'fig2': json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder),
+            'fig3': json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder),
+        }
+        
+        session.add_result(file_name, timestamp, threshold, result)
         st.markdown("<br>", unsafe_allow_html=True)
         st.write("Results saved to history.")
 
@@ -1295,22 +1473,79 @@ if selected_tab == "Upload & Run":
         save_run_to_github(threshold,uploaded_file.name,html_content)
 
 if selected_tab == "History":
+    table_style = """
+    <style>
+        table.dataframe {
+            width: 100%;
+            background-color: #0F1117;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+        table.dataframe td,
+        table.dataframe th {
+            text-align: center;
+            border: 1px solid #2a2d34;
+            padding: 2px;
+            font-size: 13px;
+            line-height: 1.2;
+            color: white;
+            width: 90px;
+        }
+        table.dataframe thead th {
+            background-color: #262730;
+            color: white;
+            font-weight: bold;
+            border-bottom: 2px solid #2a2d34;
+        }
+        table.dataframe tbody tr {
+            background-color: #0F1117;
+        }
+        table.dataframe tbody tr:hover {
+            background-color: #00C07F;
+        }
+    </style>
+""" 
+    history_results = session.get_history()
     
-    if st.session_state.history:
-        df = pd.DataFrame(st.session_state.history, columns=['file_name', 'timestamp','threshold'])
+    if history_results:
+        # Convert DataFrame to HTML table using table_style
+        df = pd.DataFrame(history_results, columns=['file_name', 'timestamp', 'threshold'])
+
+        table1_html = df.to_html(classes="dataframe")
         
-        st.write(df)
+        custom_width_html = f'<div style="width:60%; margin-left:0%; margin-right:auto">{table1_html}</div>'
+
+        st.write('History Table')
+
+        st.write(f'{table_style}{custom_width_html}', unsafe_allow_html=True)
+
         
-        index = st.sidebar.number_input("Select Index", min_value=0, max_value=len(st.session_state.history)-1, step=1)
+        index = st.sidebar.number_input("Select Index", min_value=0, max_value=len(history_results)-1, step=1)
 
         if st.sidebar.button("Display Results"):
-            selected_result = st.session_state.history[index]['result']
-
-            st.markdown(f'<p style="color:#3dfd9f;">Results for file : {st.session_state.history[index]["file_name"]} at {st.session_state.history[index]["timestamp"]}.</p>', unsafe_allow_html=True)
-
+            result_data = history_results[index]['result']
+            selected_result = {
+                'df_thresholds': pd.read_json(result_data['df_thresholds'], orient='split'),
+                'first_strategy_df': pd.read_json(result_data['first_strategy_df'], orient='split'),
+                'second_strategy_df': pd.read_json(result_data['second_strategy_df'], orient='split'),
+                'third_strategy_df': pd.read_json(result_data['third_strategy_df'], orient='split'),
+                'return_volatility_df': pd.read_json(result_data['return_volatility_df'], orient='split'),
+                'fig1': plotly.io.from_json(result_data['fig1']),
+                'fig2': plotly.io.from_json(result_data['fig2']),
+                'fig3': plotly.io.from_json(result_data['fig3']),
+            }
             
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown(f'<p style="color:#3dfd9f;font-size: 20px;">Results for file : {history_results[index]["file_name"]} at {history_results[index]["timestamp"]}.</p>', unsafe_allow_html=True)
+
             st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True)
-            st.write(selected_result['df_thresholds'])
+            # Apply table_style to df_thresholds
+            df_thresholds_html = selected_result['df_thresholds'].to_html(classes="dataframe",index=False)
+            st.write(f'{table_style}{df_thresholds_html}', unsafe_allow_html=True)
 
             st.plotly_chart(selected_result['fig1'])
             st.plotly_chart(selected_result['fig2'])
@@ -1322,180 +1557,79 @@ if selected_tab == "History":
             col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
             col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
 
-            col1.write(selected_result['first_strategy_df'])
-            col2.write(selected_result['second_strategy_df'])
-            col3.write(selected_result['third_strategy_df'])
+            # Apply table_style to first_strategy_df, second_strategy_df, and third_strategy_df
+            first_strategy_html = selected_result['first_strategy_df'].to_html(classes="dataframe",index=False)
+            second_strategy_html = selected_result['second_strategy_df'].to_html(classes="dataframe",index=False)
+            third_strategy_html = selected_result['third_strategy_df'].to_html(classes="dataframe",index=False)
+
+            # Replace the default table header 'index' with an empty header for all three strategy DataFrames
+            first_strategy_html = first_strategy_html.replace('<th>index</th>', '<th></th>')
+            second_strategy_html = second_strategy_html.replace('<th>index</th>', '<th></th>')
+            third_strategy_html = third_strategy_html.replace('<th>index</th>', '<th></th>')
+
+            col1.write(f'{table_style}{first_strategy_html}', unsafe_allow_html=True)
+            col2.write(f'{table_style}{second_strategy_html}', unsafe_allow_html=True)
+            col3.write(f'{table_style}{third_strategy_html}', unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
 
             st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility</h3>", unsafe_allow_html=True)
-            st.write(selected_result['return_volatility_df'])
+            # Apply table_style to return_volatility_df
+            return_volatility_html = selected_result['return_volatility_df'].to_html(classes="dataframe",index=False)
+            return_volatility_html = return_volatility_html.replace('<th>index</th>', '<th></th>')
+            return_volatility_html = return_volatility_html.replace('<th>level_0</th>', '<th></th>')
+            return_volatility_html = return_volatility_html.replace('<th>level_1</th>', '<th></th>')
+
+            st.write(f'{table_style}{return_volatility_html}', unsafe_allow_html=True)
+
+        if st.sidebar.button("Delete Results"):
+            # Make a temporary copy of the original index
+            original_index = index
+            # Use the delete_history_item function in your Session class
+            session.delete_history_item(index)
+            # Refresh the history results
+            history_results = session.get_history()
+            # Show a success message using the original index value
+            st.sidebar.success(f"Deleted history item at index {original_index}, please refresh to see effect")
     else:
         st.write("No history found.")
-        
-    
+
+def keep_selected_trace(fig, selected_strategy, model_number, model_name):
+    strategy_names_map = {
+        'Trading Strategy': 'Trading Strategy',
+        'Low Exposure Strategy': 'Low Exposure Strategy',
+        'High Exposure Strategy': 'High Exposure Strategy',
+        'Hold BTC Strategy': 'Hold BTC Strategy'
+    }
+
+    strategy_color_map = {
+        'Trading Strategy': ['#3dfd9f', '#2bb97d'],
+        'Low Exposure Strategy': ['#66ffff', '#59bfbf'],
+        'High Exposure Strategy': ['#1d98e3', '#167abf'],
+        'Hold BTC Strategy': ['#ff0000', '#ff0000'] 
+    }
+
+    selected_strategy_name = strategy_names_map[selected_strategy]
+    hold_btc_strategy_name = strategy_names_map['Hold BTC Strategy']
+
+    fig.data = [trace for trace in fig.data if trace.name.startswith(selected_strategy_name) or trace.name.startswith(hold_btc_strategy_name)]
+
+    for trace in fig.data:
+        if trace.name.startswith(selected_strategy_name):
+            trace.name = f'{selected_strategy} for {model_name}'
+            trace.line.color = strategy_color_map[selected_strategy][model_number-1]
+            trace.hovertemplate = '<b>%{x}</b><br><i>$%{y:.2f}</i>'
+        elif trace.name.startswith(hold_btc_strategy_name):
+            trace.name = 'Hold BTC Strategy'
+            trace.line.color = strategy_color_map['Hold BTC Strategy'][model_number-1]
+            trace.hovertemplate = '<b>%{x}</b><br><i>$%{y:.2f}</i>'
+            
+    fig.for_each_trace(lambda t: t.update(showlegend = False) if t.name == fig.data[-1].name else ())
+    return fig
+
+
 if selected_tab == "Comparison":
-    threshold = st.sidebar.number_input("Define your threshold:", min_value=0.0,step=0.1,format='%2f')
-    threshold_decimal = threshold / 100
-    st.markdown(
-    f'<div class="top-right" style="color:#3dfd9f">Defined Threshold: <strong style="color:#ffffff">{threshold}%</strong></div>',
-    unsafe_allow_html=True,
-    )
-    default_strategy = "High Exposure Strategy"
-    selected_strategy = st.sidebar.selectbox("BTC Performance Strategy:", strategies, index=strategies.index(default_strategy), key='strategy_selection')
-    first = st.sidebar.file_uploader("Drag and drop your first model", type=['csv','xlsx','xlsm'])
-    st.sidebar.write('vs')
-    second = st.sidebar.file_uploader("Drag and drop your second model", type=['csv','xlsx','xlsm'])
-    compare = st.sidebar.button("Compare")
-
-    if first is not None:
-        if first.name.endswith('.csv'):
-                initial_df = pd.read_csv(first, encoding='utf-8')
-                if not is_correct_format(initial_df):
-                # Reset the uploaded file to the start
-                    first.seek(0)
-                    initial_df = pd.read_csv(first, encoding='utf-8',header=None)
-                    # Convert the first column values to text
-                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
-                    # Create a new DataFrame from the text
-                    initial_df = pd.read_csv(StringIO(csv_text))
-        elif first.name.endswith(('.xlsx', '.xlsm')):
-            initial_df = pd.read_excel(first, engine='openpyxl')
-            if not is_correct_format(initial_df):
-                # Reset the uploaded file to the start
-                    first.seek(0)
-                    initial_df = pd.read_excel(first, engine='openpyxl',header=None)
-                    # Convert the first column values to text
-                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
-                    # Create a new DataFrame from the text
-                    initial_df = pd.read_csv(StringIO(csv_text))
-        else:
-            st.write("Unsupported file type. Please upload a CSV, XLSX, or XLSM file.")
-        initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
-        initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
-        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') & (initial_df['StartTime'] <= '2022-12-31 23:00:00')
-        df_start = initial_df.copy()
-        initial_df = initial_df.loc[mask]
-        initial_df = initial_df.reset_index(drop=True)
-        
-        df_thresholds_first = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
-        df_thresholds_first = format_dataframe_values(df_thresholds_first)
-        main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
-        
-        last_hour = last_hour_df(main_df)
-        last_hour_day = last_hour_and_day_df(main_df)
-        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
-    
-        df_21 = filter_2021_df(main_df)
-        df_22 = filter_2022_df(main_df)
-        df_21_last_hour = filter_2021_last_hour_df(last_hour)
-        df_22_last_hour = filter_2022_last_hour_df(last_hour)
-        df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
-        df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
-        
-        return_volatility_df_first = return_volatility(last_hour)
-
-        important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
-        important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
-        important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
-
-        important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df['BTC HOLD'] = format_percentage(important_scores_df['BTC HOLD'])
-
-        important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df_21['BTC HOLD'] = format_percentage(important_scores_df_21['BTC HOLD'])
-
-        important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
-
-        first_strategy_df_first = first_strategy(important_scores_df_21,important_scores_df_22)
-        second_strategy_df_first = second_strategy(important_scores_df_21,important_scores_df_22)
-        third_strategy_df_first = third_strategy(important_scores_df_21,important_scores_df_22)
-
-        fig1_first = networth_evolution(last_hour)
-        fig2_first = networth_evolution_each_day(last_hour)
-        fig3_first = plot_pct_difference(main_df,selected_strategy)
-    
-    if second is not None:
-        if second.name.endswith('.csv'):
-                initial_df = pd.read_csv(second, encoding='utf-8')
-                if not is_correct_format(initial_df):
-                # Reset the uploaded file to the start
-                    second.seek(0)
-                    initial_df = pd.read_csv(second, encoding='utf-8',header=None)
-                    # Convert the first column values to text
-                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
-                    # Create a new DataFrame from the text
-                    initial_df = pd.read_csv(StringIO(csv_text))
-        elif second.name.endswith(('.xlsx', '.xlsm')):
-            initial_df = pd.read_excel(second, engine='openpyxl')
-            if not is_correct_format(initial_df):
-                # Reset the uploaded file to the start
-                    second.seek(0)
-                    initial_df = pd.read_excel(second, engine='openpyxl',header=None)
-                    # Convert the first column values to text
-                    csv_text = '\n'.join(initial_df.iloc[:, 0].tolist())
-                    # Create a new DataFrame from the text
-                    initial_df = pd.read_csv(StringIO(csv_text))
-        else:
-            st.write("Unsupported file type. Please upload a CSV, XLSX, or XLSM file.")
-        initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
-        initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
-        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') & (initial_df['StartTime'] <= '2022-12-31 23:00:00')
-        df_start = initial_df.copy()
-        initial_df = initial_df.loc[mask]
-        initial_df = initial_df.reset_index(drop=True)
-        
-        df_thresholds_second = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
-        df_thresholds_second = format_dataframe_values(df_thresholds_second)
-        main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
-        
-        last_hour = last_hour_df(main_df)
-        last_hour_day = last_hour_and_day_df(main_df)
-        last_day_of_the_year = last_day_of_the_year_last_hour(main_df)
-    
-        df_21 = filter_2021_df(main_df)
-        df_22 = filter_2022_df(main_df)
-        df_21_last_hour = filter_2021_last_hour_df(last_hour)
-        df_22_last_hour = filter_2022_last_hour_df(last_hour)
-        df_21_last_hour_last_day = filter_2021_last_hour_last_day(last_hour_day)
-        df_22_last_hour_last_day = filter_2022_last_hour_last_day(last_hour_day)
-        
-        return_volatility_df_second = return_volatility(last_hour)
-
-        important_scores_df = important_scores(main_df,last_hour,last_day_of_the_year)
-        important_scores_df_21 = important_scores_21(main_df,last_hour,last_day_of_the_year)
-        important_scores_df_22 = important_scores_22(main_df,last_hour,last_day_of_the_year)
-
-        important_scores_df['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df['BTC HOLD'] = format_percentage(important_scores_df['BTC HOLD'])
-
-        important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_21['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df_21['BTC HOLD'] = format_percentage(important_scores_df_21['BTC HOLD'])
-
-        important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG NO THRESHOLD'])
-        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD'])
-        important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = format_percentage(important_scores_df_22['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'])
-        important_scores_df_22['BTC HOLD'] = format_percentage(important_scores_df_22['BTC HOLD'])
-
-        first_strategy_df_second = first_strategy(important_scores_df_21,important_scores_df_22)
-        second_strategy_df_second = second_strategy(important_scores_df_21,important_scores_df_22)
-        third_strategy_df_second = third_strategy(important_scores_df_21,important_scores_df_22)
-
-        fig1_second = networth_evolution(last_hour)
-        fig2_second = networth_evolution_each_day(last_hour)
-        fig3_second = plot_pct_difference(main_df,selected_strategy)
 
     table_style = """
     <style>
@@ -1513,9 +1647,10 @@ if selected_tab == "Comparison":
             text-align: center;
             border: 1px solid #2a2d34;
             padding: 2px;
-            font-size: 15px;
+            font-size: 13px;
             line-height: 1.2;
             color: white;
+            width: 90px;
         }
         table.dataframe thead th {
             background-color: #262730;
@@ -1532,81 +1667,93 @@ if selected_tab == "Comparison":
     </style>
 """ 
 
-    if compare:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True)
-        
-        table1_html = df_thresholds_first.to_html(classes="dataframe")
-        table2_html = first_strategy_df_first.to_html(classes="dataframe")
-        table3_html = second_strategy_df_first.to_html(classes="dataframe")
-        table4_html = third_strategy_df_first.to_html(classes="dataframe")
-        table5_html = return_volatility_df_first.to_html(classes="dataframe")
-        table6_html = df_thresholds_second.to_html(classes="dataframe")
-        table7_html = first_strategy_df_second.to_html(classes="dataframe")
-        table8_html = second_strategy_df_second.to_html(classes="dataframe")
-        table9_html = third_strategy_df_second.to_html(classes="dataframe")
-        table10_html = return_volatility_df_second.to_html(classes="dataframe")
+    history_results = session.get_history()
 
+    st.sidebar.write("Model Comparison ")
+
+    # User selection of models
+    index1 = st.sidebar.number_input("Select model 1 index (history)", min_value=0, max_value=len(history_results)-1, step=1)
+    index2 = st.sidebar.number_input("Select model 2 index (history)", min_value=0, max_value=len(history_results)-1, step=1)
+
+    # User selection of strategy
+    strategy_list = [
+        'Trading Strategy',
+        'Low Exposure Strategy',
+        'High Exposure Strategy',
+    ]
+    
+    selected_strategy1 = st.sidebar.selectbox("Select strategy for Model 1", strategy_list, key='strategy1')
+    selected_strategy2 = st.sidebar.selectbox("Select strategy for Model 2", strategy_list, key='strategy2')  
+      
+    if st.sidebar.button("Compare Models"):
+        # Get the result data for the selected models
+        result_data1 = history_results[index1]['result']
+        result_data2 = history_results[index2]['result']
+        model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
+        model1_threshold = history_results[index1]['threshold']
+        model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
+        model2_threshold = history_results[index2]['threshold']
+
+          # Extract the selected strategy data for each model
+        strategy_key1 = ""
+        if selected_strategy1 == 'Trading Strategy':
+            strategy_key1 = 'first_strategy_df'
+        elif selected_strategy1 == 'Low Exposure Strategy':
+            strategy_key1 = 'second_strategy_df'
+        elif selected_strategy1 == 'High Exposure Strategy':
+            strategy_key1 = 'third_strategy_df'
+
+        strategy_key2 = ""
+        if selected_strategy2 == 'Trading Strategy':
+            strategy_key2 = 'first_strategy_df'
+        elif selected_strategy2 == 'Low Exposure Strategy':
+            strategy_key2 = 'second_strategy_df'
+        elif selected_strategy2 == 'High Exposure Strategy':
+            strategy_key2 = 'third_strategy_df'
+
+        strategy_data1 = pd.read_json(result_data1[strategy_key1], orient='split')
+        strategy_data2 = pd.read_json(result_data2[strategy_key2], orient='split')
+        
+        # Adding the Table style for both tables 
+        strategy_data1_html = strategy_data1.to_html(classes="dataframe")
+        strategy_data2_html = strategy_data2.to_html(classes="dataframe")
+        styled_strategy_data1_html = f'{table_style}{strategy_data1_html}'
+        styled_strategy_data2_html = f'{table_style}{strategy_data2_html}'
+
+        # Display strategy data side-by-side
         col1, col2 = st.columns(2)
 
-        col1.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
-        col1.write(f'{table_style}{table1_html}', unsafe_allow_html=True)
-        col2.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
-        col2.write(f'{table_style}{table6_html}', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
-        st.plotly_chart(fig2_first)
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
-        st.plotly_chart(fig2_second)
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
-        st.plotly_chart(fig2_first)
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
-        st.plotly_chart(fig2_second)
-        st.markdown("<br>", unsafe_allow_html=True)
+        col1.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model1_file} (T: {model1_threshold}) - {selected_strategy1}</h3>", unsafe_allow_html=True)
+        col2.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model2_file} (T: {model2_threshold}) - {selected_strategy2}</h3>", unsafe_allow_html=True)
 
 
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(First Model)</h3>",unsafe_allow_html=True)
-        st.plotly_chart(fig3_first)
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 17px;'>(Second Model)</h3>",unsafe_allow_html=True)
-        st.plotly_chart(fig3_second)
+        col1.write(styled_strategy_data1_html, unsafe_allow_html=True)
+        col2.write(styled_strategy_data2_html, unsafe_allow_html=True)
 
-        
+        # Load the figures for the selected models
+        fig1_model1 = plotly.io.from_json(result_data1['fig1'])
+        fig1_model2 = plotly.io.from_json(result_data2['fig1'])
+        fig2_model1 = plotly.io.from_json(result_data1['fig2'])
+        fig2_model2 = plotly.io.from_json(result_data2['fig2'])
 
+        # Keep only the selected strategies in each figure
+        fig1_model1 = keep_selected_trace(fig1_model1, selected_strategy1,1,model1_file)
+        fig1_model2 = keep_selected_trace(fig1_model2, selected_strategy2,2,model2_file)
+        fig2_model1 = keep_selected_trace(fig2_model1, selected_strategy1,1,model1_file)
+        fig2_model2 = keep_selected_trace(fig2_model2, selected_strategy2,2,model2_file)
 
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 22px;'>(First Model)</h3>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
-        col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
-        col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
+        # Combine the selected strategies for both models into new figures
+        fig1_combined = go.Figure(data=fig1_model1.data + fig1_model2.data)
+        fig1_combined.update_layout(autosize=False, width=1000, height=500)
+        fig2_combined = go.Figure(data=fig2_model1.data + fig2_model2.data)
+        fig2_combined.update_layout(autosize=False, width=1000, height=500)
 
-        col1.write(f'{table_style}{table2_html}', unsafe_allow_html=True)
-        col2.write(f'{table_style}{table3_html}', unsafe_allow_html=True)
-        col3.write(f'{table_style}{table4_html}', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 22px;'>(Second Model)</h3>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        col1.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Trading Strategy</h3>", unsafe_allow_html=True)
-        col2.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Low Exposure Strategy</h3>", unsafe_allow_html=True)
-        col3.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>High Exposure Strategy</h3>", unsafe_allow_html=True)
-
-        col1.write(f'{table_style}{table7_html}', unsafe_allow_html=True)
-        col2.write(f'{table_style}{table8_html}', unsafe_allow_html=True)
-        col3.write(f'{table_style}{table9_html}', unsafe_allow_html=True)
+        # Display the combined figures
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution between {model1_file} and {model2_file}", unsafe_allow_html=True)
+        st.plotly_chart(fig1_combined)
 
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility (First Model)</h3>", unsafe_allow_html=True)
-        st.write(f'{table_style}{table5_html}', unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Return and Volatility (Second Model)</h3>", unsafe_allow_html=True)
-        st.write(f'{table_style}{table10_html}', unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} and {model2_file}", unsafe_allow_html=True)
+        st.plotly_chart(fig2_combined)
