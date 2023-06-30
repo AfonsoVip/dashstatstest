@@ -16,6 +16,7 @@ from github import Github
 import datetime
 import plotly.offline as pyo
 import json
+import os
 pd.options.mode.chained_assignment = None  
 
 
@@ -152,7 +153,7 @@ def networth_evolution(df):
 
     # Customizing the layout of the subplot
     fig.update_layout(
-        width=1100,    
+        width=1000,    
         height=600,
         title=dict(text='Networth Evolution (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
@@ -195,7 +196,7 @@ def networth_evolution_each_day(df):
 
     # Customizing the layout of the subplot
     fig.update_layout(
-        width=1100,
+        width=1000,
         height=600,
         title=dict(text='Networth Evolution Today if started on this day (ARMS VS HOLD)', font=dict(color='#3dfd9f')),
         hovermode='x unified',
@@ -585,6 +586,7 @@ def last_day_of_the_year_last_hour(df):
 
 def format_percentage(col):
     return col.apply(lambda x: str(round(x, 2)) + '%' if isinstance(x, (int, float)) and not mt.isnan(x) and col.tolist().index(x) != 2 else str(round(float(x), 2)) if str(x) != 'nan' else x)
+
 def safe_round_and_format(x):
     try:
         return str(round(x)) + '%'
@@ -638,7 +640,6 @@ def format_percentage1(col):
 def important_scores(df,last_hour,last_day_of_the_year):
 
     # NW 2 STEPS LONG NO THRESHOLD
-
     return_s_first = ((last_day_of_the_year['NW 2STEPS LONG NO THRESHOLD LAST HOUR AND DAY OF THE YEAR'].iloc[-1] / 100) - 1) * 100
     volatility_first = last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_first = ((last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].mean() - 0.02/365) / (last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
@@ -722,9 +723,9 @@ def important_scores(df,last_hour,last_day_of_the_year):
     percentagetime_sell_forth = np.nan
     
 
-    index_column = ['return','volatility', 'annualized sharpe ratio', 'ACCURACY strategy', 'accuracy signals', 'BETTER ARMS',
+    index_column = ['return','volatility', 'annualized sharpe ratio', 'accuracy strategy', 'accuracy signals', 'better arms',
                 'difference from ATH', 'maximum daily gain', 'maximum daily loss', 'mean monthly return',
-                'best monthly return', 'worst month return', 'return 2021', 'return 2022', '%time in', '% buy',
+                'best monthly return', 'worst month return', 'return 2021', 'return 2022', '% time in', '% buy',
                 '% hold', '% sell']
 
     first_data = [return_s_first, volatility_first, annualized_sharpe_ratio_first, accuracy_strategy_first, accuracy_signals_first, better_arms_first, difference_from_ATH_first, maximum_daily_gain_first, maximum_daily_loss_first, mean_monthly_return_first, best_monthly_return_first, worst_monthly_return_first, return_2021_first, return_2022_first, percentagetime_in_first, percentagetime_buy_first, percentagetime_hold_first, percentagetime_sell_first]
@@ -777,8 +778,8 @@ def filter_2021_last_hour_df(df):
 
 def filter_2021_last_hour_last_day(df):
     mask = (last_hour_day['StartTime'].dt.year == 2021) & (last_hour_day['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
-    df_filter_22_last_hour = last_hour_day.loc[mask]
-    return df_filter_22_last_hour
+    df_filter_21_last_hour = last_hour_day.loc[mask]
+    return df_filter_21_last_hour
 
 def filter_2022_last_hour_df(df):
     mask = (last_hour['StartTime'].dt.year == 2022) & (last_hour['StartTime'].dt.time == pd.to_datetime('23:00:00').time())
@@ -1229,13 +1230,12 @@ def save_results_to_html():
     </html>
     '''
     return html_content
-    
-# Retrieve the token from Streamlit secrets
-GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+
 # Setting up GitHub credentials
+GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 REPOSITORY_NAME = 'dashstatstest'
 
-# Authenticating GitHub
+# Authenticating GitHub 
 g = Github(GITHUB_TOKEN)
 repo = g.get_user().get_repo(REPOSITORY_NAME)
 
@@ -1252,14 +1252,6 @@ def save_run_to_github(threshold, filename, content):
         repo.create_file(folder_name, f"Create run {now} result", content.encode())
 
     print(f"Saved '{folder_name}' to the main branch in repository '{repo.full_name}'")
-
-def filter_plot_data(plot_fig, strategy_key):
-    filtered_data = []
-    for trace in plot_fig['data']:
-        if strategy_key in trace['name']:
-            filtered_data.append(trace)
-    plot_fig['data'] = filtered_data
-    return plot_fig
 
 if 'tab' not in st.session_state:
     st.session_state.tab = "Upload & Run"
@@ -1546,6 +1538,8 @@ if selected_tab == "History":
                 'fig3': plotly.io.from_json(result_data['fig3']),
             }
             
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             st.markdown(f'<p style="color:#3dfd9f;font-size: 20px;">Results for file : {history_results[index]["file_name"]} at {history_results[index]["timestamp"]}.</p>', unsafe_allow_html=True)
 
             st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True)
@@ -1601,81 +1595,165 @@ if selected_tab == "History":
     else:
         st.write("No history found.")
 
+def keep_selected_trace(fig, selected_strategy, model_number, model_name):
+    strategy_names_map = {
+        'Trading Strategy': 'Trading Strategy',
+        'Low Exposure Strategy': 'Low Exposure Strategy',
+        'High Exposure Strategy': 'High Exposure Strategy',
+        'Hold BTC Strategy': 'Hold BTC Strategy'
+    }
+
+    strategy_color_map = {
+        'Trading Strategy': ['#3dfd9f', '#2bb97d'],
+        'Low Exposure Strategy': ['#66ffff', '#59bfbf'],
+        'High Exposure Strategy': ['#1d98e3', '#167abf'],
+        'Hold BTC Strategy': ['#ff0000', '#ff0000'] 
+    }
+
+    selected_strategy_name = strategy_names_map[selected_strategy]
+    hold_btc_strategy_name = strategy_names_map['Hold BTC Strategy']
+
+    fig.data = [trace for trace in fig.data if trace.name.startswith(selected_strategy_name) or trace.name.startswith(hold_btc_strategy_name)]
+
+    for trace in fig.data:
+        if trace.name.startswith(selected_strategy_name):
+            trace.name = f'{selected_strategy} for {model_name}'
+            trace.line.color = strategy_color_map[selected_strategy][model_number-1]
+            trace.hovertemplate = '<b>%{x}</b><br><i>$%{y:.2f}</i>'
+        elif trace.name.startswith(hold_btc_strategy_name):
+            trace.name = 'Hold BTC Strategy'
+            trace.line.color = strategy_color_map['Hold BTC Strategy'][model_number-1]
+            trace.hovertemplate = '<b>%{x}</b><br><i>$%{y:.2f}</i>'
+            
+    fig.for_each_trace(lambda t: t.update(showlegend = False) if t.name == fig.data[-1].name else ())
+    return fig
+
 
 if selected_tab == "Comparison":
+
+    table_style = """
+    <style>
+        table.dataframe {
+            width: 100%;
+            background-color: #0F1117;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+        }
+        table.dataframe td,
+        table.dataframe th {
+            text-align: center;
+            border: 1px solid #2a2d34;
+            padding: 2px;
+            font-size: 13px;
+            line-height: 1.2;
+            color: white;
+            width: 90px;
+        }
+        table.dataframe thead th {
+            background-color: #262730;
+            color: white;
+            font-weight: bold;
+            border-bottom: 2px solid #2a2d34;
+        }
+        table.dataframe tbody tr {
+            background-color: #0F1117;
+        }
+        table.dataframe tbody tr:hover {
+            background-color: #00C07F;
+        }
+    </style>
+""" 
 
     history_results = session.get_history()
 
     st.sidebar.write("Model Comparison ")
 
-    # Create a section in the sidebar for the user to select two models and the strategy
-    st.sidebar.write("Select Two Models and Strategy")
-
     # User selection of models
-    index1 = st.sidebar.number_input("Select first model index (history)", min_value=0, max_value=len(history_results)-1, step=1)
-    index2 = st.sidebar.number_input("Select second model index (history)", min_value=0, max_value=len(history_results)-1, step=1)
+    index1 = st.sidebar.number_input("Select model 1 index (history)", min_value=0, max_value=len(history_results)-1, step=1)
+    index2 = st.sidebar.number_input("Select model 2 index (history)", min_value=0, max_value=len(history_results)-1, step=1)
 
     # User selection of strategy
     strategy_list = [
         'Trading Strategy',
         'Low Exposure Strategy',
         'High Exposure Strategy',
-        'Hold BTC Strategy'
     ]
-    selected_strategy = st.sidebar.selectbox("Select strategy", strategy_list)
-
+    
+    selected_strategy1 = st.sidebar.selectbox("Select strategy for Model 1", strategy_list, key='strategy1')
+    selected_strategy2 = st.sidebar.selectbox("Select strategy for Model 2", strategy_list, key='strategy2')  
+      
     if st.sidebar.button("Compare Models"):
         # Get the result data for the selected models
         result_data1 = history_results[index1]['result']
         result_data2 = history_results[index2]['result']
+        model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
+        model1_threshold = history_results[index1]['threshold']
+        model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
+        model2_threshold = history_results[index2]['threshold']
 
-        # Extract the selected strategy data for each model
-        strategy_key = ""
-        if selected_strategy == 'Trading Strategy':
-            strategy_key = 'first_strategy_df'
-        elif selected_strategy == 'Low Exposure Strategy':
-            strategy_key = 'second_strategy_df'
-        elif selected_strategy == 'High Exposure Strategy':
-            strategy_key = 'third_strategy_df'
+          # Extract the selected strategy data for each model
+        strategy_key1 = ""
+        if selected_strategy1 == 'Trading Strategy':
+            strategy_key1 = 'first_strategy_df'
+        elif selected_strategy1 == 'Low Exposure Strategy':
+            strategy_key1 = 'second_strategy_df'
+        elif selected_strategy1 == 'High Exposure Strategy':
+            strategy_key1 = 'third_strategy_df'
 
-        strategy_data1 = pd.read_json(result_data1[strategy_key], orient='split')
-        strategy_data2 = pd.read_json(result_data2[strategy_key], orient='split')
+        strategy_key2 = ""
+        if selected_strategy2 == 'Trading Strategy':
+            strategy_key2 = 'first_strategy_df'
+        elif selected_strategy2 == 'Low Exposure Strategy':
+            strategy_key2 = 'second_strategy_df'
+        elif selected_strategy2 == 'High Exposure Strategy':
+            strategy_key2 = 'third_strategy_df'
 
-        # Combine the first and second plot, but only include the selected strategy for each model
-        fig1_1 = plotly.io.from_json(result_data1['fig1'])
-        fig1_2 = plotly.io.from_json(result_data2['fig1'])
+        strategy_data1 = pd.read_json(result_data1[strategy_key1], orient='split')
+        strategy_data2 = pd.read_json(result_data2[strategy_key2], orient='split')
         
+        # Adding the Table style for both tables 
+        strategy_data1_html = strategy_data1.to_html(classes="dataframe")
+        strategy_data2_html = strategy_data2.to_html(classes="dataframe")
+        styled_strategy_data1_html = f'{table_style}{strategy_data1_html}'
+        styled_strategy_data2_html = f'{table_style}{strategy_data2_html}'
 
         # Display strategy data side-by-side
         col1, col2 = st.columns(2)
 
-        col1.markdown(f"<h3 style='color: #3dfd9f;font-size: 20px;'>Model {index1} - {selected_strategy}</h3>", unsafe_allow_html=True)
-        col2.markdown(f"<h3 style='color: #3dfd9f;font-size: 20px;'>Model {index2} - {selected_strategy}</h3>", unsafe_allow_html=True)
+        col1.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model1_file} (T: {model1_threshold}) - {selected_strategy1}</h3>", unsafe_allow_html=True)
+        col2.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model2_file} (T: {model2_threshold}) - {selected_strategy2}</h3>", unsafe_allow_html=True)
 
-        col1.write(strategy_data1)
-        col2.write(strategy_data2)
 
-        # Display Plot 1 based on the selected strategy
-        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 20px;'>Plot 1 Model {index1} and {index2} </h3>", unsafe_allow_html=True)
-        fig1_1 = plotly.io.from_json(result_data1['fig1'])
-        fig1_2 = plotly.io.from_json(result_data2['fig1'])
-        
-        st.plotly_chart(fig1_1)
-        st.plotly_chart(fig1_2)
+        col1.write(styled_strategy_data1_html, unsafe_allow_html=True)
+        col2.write(styled_strategy_data2_html, unsafe_allow_html=True)
 
-        # Display Plot 2 based on the selected strategy
-        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 20px;'>Plot 2 Model {index1} and {index2} </h3>", unsafe_allow_html=True)
-        fig2_1 = plotly.io.from_json(result_data1['fig2'])
-        fig2_2 = plotly.io.from_json(result_data2['fig2'])
-     
-        st.plotly_chart(fig2_1)
-        st.plotly_chart(fig2_2)
+        # Load the figures for the selected models
+        fig1_model1 = plotly.io.from_json(result_data1['fig1'])
+        fig1_model2 = plotly.io.from_json(result_data2['fig1'])
+        fig2_model1 = plotly.io.from_json(result_data1['fig2'])
+        fig2_model2 = plotly.io.from_json(result_data2['fig2'])
 
-        # Display Plot 3 based on the selected strategy
-        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 20px;'>Plot 3 Model {index1} and {index2} </h3>", unsafe_allow_html=True)
-        fig3_1 = plotly.io.from_json(result_data1['fig3'])
-        fig3_2 = plotly.io.from_json(result_data2['fig3'])
+        # Keep only the selected strategies in each figure
+        fig1_model1 = keep_selected_trace(fig1_model1, selected_strategy1,1,model1_file)
+        fig1_model2 = keep_selected_trace(fig1_model2, selected_strategy2,2,model2_file)
+        fig2_model1 = keep_selected_trace(fig2_model1, selected_strategy1,1,model1_file)
+        fig2_model2 = keep_selected_trace(fig2_model2, selected_strategy2,2,model2_file)
 
-        st.plotly_chart(fig3_1)
-        st.plotly_chart(fig3_2)
-       
+        # Combine the selected strategies for both models into new figures
+        fig1_combined = go.Figure(data=fig1_model1.data + fig1_model2.data)
+        fig1_combined.update_layout(autosize=False, width=1000, height=500)
+        fig2_combined = go.Figure(data=fig2_model1.data + fig2_model2.data)
+        fig2_combined.update_layout(autosize=False, width=1000, height=500)
+
+        # Display the combined figures
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution between {model1_file} and {model2_file}", unsafe_allow_html=True)
+        st.plotly_chart(fig1_combined)
+
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} and {model2_file}", unsafe_allow_html=True)
+        st.plotly_chart(fig2_combined)
