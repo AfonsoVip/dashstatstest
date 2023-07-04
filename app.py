@@ -1757,3 +1757,26 @@ if selected_tab == "Comparison":
 
         st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} and {model2_file}", unsafe_allow_html=True)
         st.plotly_chart(fig2_combined)
+
+        strategy_row_dict = {
+            'Trading Strategy': [0, 1, 2], 
+            'Low Exposure Strategy': [0, 3, 4], 
+            'High Exposure Strategy': [0, 5, 6]
+        }
+
+        if selected_strategy1 in strategy_row_dict:
+            merged_row_1 = ret_vol_df1.loc[strategy_row_dict[selected_strategy1]]
+
+        if selected_strategy2 in strategy_row_dict:
+            merged_row_2 = ret_vol_df2.loc[strategy_row_dict[selected_strategy2]]
+    
+
+        final_merge = pd.merge(merged_row_1,merged_row_2,how = 'outer')
+
+        final_merge_html = final_merge.to_html(classes="dataframe",index=False)
+
+        final_merge_html = final_merge_html.replace('<th>level_0</th>', '<th></th>')
+        final_merge_html = final_merge_html.replace('<th>level_1</th>', '<th></th>')
+
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Return and Volatility {model1_file} with {model1_threshold} T and {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
+        st.write(final_merge_html,unsafe_allow_html=True)
