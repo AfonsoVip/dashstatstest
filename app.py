@@ -1232,10 +1232,10 @@ def save_results_to_html():
     return html_content
 
 # Setting up GitHub credentials
-GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+GITHUB_TOKEN = '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'
 REPOSITORY_NAME = 'dashstatstest'
 
-# Authenticating GitHub 
+# Authenticating GitHub
 g = Github(GITHUB_TOKEN)
 repo = g.get_user().get_repo(REPOSITORY_NAME)
 
@@ -1595,7 +1595,7 @@ if selected_tab == "History":
     else:
         st.write("No history found.")
 
-def keep_selected_trace(fig, selected_strategy, model_number, model_name):
+def keep_selected_trace(fig, selected_strategy, model_number,model_threshold, model_name):
     strategy_names_map = {
         'Trading Strategy': 'Trading Strategy',
         'Low Exposure Strategy': 'Low Exposure Strategy',
@@ -1607,7 +1607,7 @@ def keep_selected_trace(fig, selected_strategy, model_number, model_name):
         'Trading Strategy': ['#3dfd9f', '#2bb97d'],
         'Low Exposure Strategy': ['#66ffff', '#59bfbf'],
         'High Exposure Strategy': ['#1d98e3', '#167abf'],
-        'Hold BTC Strategy': ['#ff0000', '#ff0000'] 
+        'Hold BTC Strategy': ['#ff0000', '#8B0000'] 
     }
 
     selected_strategy_name = strategy_names_map[selected_strategy]
@@ -1617,15 +1617,15 @@ def keep_selected_trace(fig, selected_strategy, model_number, model_name):
 
     for trace in fig.data:
         if trace.name.startswith(selected_strategy_name):
-            trace.name = f'{selected_strategy} for {model_name}'
+            trace.name = f'{selected_strategy} for {model_name} (Threshold: {model_threshold})'
             trace.line.color = strategy_color_map[selected_strategy][model_number-1]
             trace.hovertemplate = '<b>%{x}</b><br><i>$%{y:.2f}</i>'
         elif trace.name.startswith(hold_btc_strategy_name):
-            trace.name = 'Hold BTC Strategy'
+            trace.name = f'{hold_btc_strategy_name} for {model_name} (Threshold: {model_threshold})'
             trace.line.color = strategy_color_map['Hold BTC Strategy'][model_number-1]
             trace.hovertemplate = '<b>%{x}</b><br><i>$%{y:.2f}</i>'
             
-    fig.for_each_trace(lambda t: t.update(showlegend = False) if t.name == fig.data[-1].name else ())
+    
     return fig
 
 
@@ -1672,8 +1672,8 @@ if selected_tab == "Comparison":
     st.sidebar.write("Model Comparison ")
 
     # User selection of models
-    index1 = st.sidebar.number_input("Select model 1 index (history)", min_value=0, max_value=len(history_results)-1, step=1)
-    index2 = st.sidebar.number_input("Select model 2 index (history)", min_value=0, max_value=len(history_results)-1, step=1)
+    index1 = st.sidebar.number_input("Select model 1 index (History)", min_value=0, max_value=len(history_results)-1, step=1)
+    index2 = st.sidebar.number_input("Select model 2 index (History)", min_value=0, max_value=len(history_results)-1, step=1)
 
     # User selection of strategy
     strategy_list = [
@@ -1686,15 +1686,17 @@ if selected_tab == "Comparison":
     selected_strategy2 = st.sidebar.selectbox("Select strategy for Model 2", strategy_list, key='strategy2')  
       
     if st.sidebar.button("Compare Models"):
-        # Get the result data for the selected models
+        # Getting the result data for the selected models
         result_data1 = history_results[index1]['result']
         result_data2 = history_results[index2]['result']
         model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
         model1_threshold = history_results[index1]['threshold']
         model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
         model2_threshold = history_results[index2]['threshold']
+        ret_vol_df1 = pd.read_json(history_results[index1]['result']['return_volatility_df'], orient='split')
+        ret_vol_df2 = pd.read_json(history_results[index2]['result']['return_volatility_df'], orient='split')
 
-          # Extract the selected strategy data for each model
+          # Extracting the selected strategy data for each model
         strategy_key1 = ""
         if selected_strategy1 == 'Trading Strategy':
             strategy_key1 = 'first_strategy_df'
@@ -1715,10 +1717,14 @@ if selected_tab == "Comparison":
         strategy_data2 = pd.read_json(result_data2[strategy_key2], orient='split')
         
         # Adding the Table style for both tables 
-        strategy_data1_html = strategy_data1.to_html(classes="dataframe")
-        strategy_data2_html = strategy_data2.to_html(classes="dataframe")
+        strategy_data1_html = strategy_data1.to_html(classes="dataframe",index=False)
+        strategy_data2_html = strategy_data2.to_html(classes="dataframe",index=False)
         styled_strategy_data1_html = f'{table_style}{strategy_data1_html}'
         styled_strategy_data2_html = f'{table_style}{strategy_data2_html}'
+
+        styled_strategy_data1_html = styled_strategy_data1_html.replace('<th>index</th>', '<th></th>')
+        styled_strategy_data2_html = styled_strategy_data2_html.replace('<th>index</th>', '<th></th>')
+
 
         # Display strategy data side-by-side
         col1, col2 = st.columns(2)
@@ -1730,32 +1736,37 @@ if selected_tab == "Comparison":
         col1.write(styled_strategy_data1_html, unsafe_allow_html=True)
         col2.write(styled_strategy_data2_html, unsafe_allow_html=True)
 
-        # Load the figures for the selected models
+        # Loading the figures for the selected models
         fig1_model1 = plotly.io.from_json(result_data1['fig1'])
         fig1_model2 = plotly.io.from_json(result_data2['fig1'])
         fig2_model1 = plotly.io.from_json(result_data1['fig2'])
         fig2_model2 = plotly.io.from_json(result_data2['fig2'])
 
-        # Keep only the selected strategies in each figure
-        fig1_model1 = keep_selected_trace(fig1_model1, selected_strategy1,1,model1_file)
-        fig1_model2 = keep_selected_trace(fig1_model2, selected_strategy2,2,model2_file)
-        fig2_model1 = keep_selected_trace(fig2_model1, selected_strategy1,1,model1_file)
-        fig2_model2 = keep_selected_trace(fig2_model2, selected_strategy2,2,model2_file)
+        # Keeping only the selected strategies in each figure
+        fig1_model1 = keep_selected_trace(fig1_model1, selected_strategy1,1,model1_threshold,model1_file)
+        fig1_model2 = keep_selected_trace(fig1_model2, selected_strategy2,2,model2_threshold,model2_file)
+        fig2_model1 = keep_selected_trace(fig2_model1, selected_strategy1,1,model1_threshold,model1_file)
+        fig2_model2 = keep_selected_trace(fig2_model2, selected_strategy2,2,model2_threshold,model2_file)
 
-        # Combine the selected strategies for both models into new figures
+        # Combining the selected strategies for both models into new figures
         fig1_combined = go.Figure(data=fig1_model1.data + fig1_model2.data)
         fig1_combined.update_layout(autosize=False, width=1000, height=500)
         fig2_combined = go.Figure(data=fig2_model1.data + fig2_model2.data)
         fig2_combined.update_layout(autosize=False, width=1000, height=500)
 
-        # Display the combined figures
+        # Removing Grid 
+        fig1_combined.update_xaxes(showgrid=False)
+        fig1_combined.update_yaxes(showgrid=False)
+        fig2_combined.update_xaxes(showgrid=False)
+        fig2_combined.update_yaxes(showgrid=False)
+
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution between {model1_file} and {model2_file}", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution between {model1_file} with {model1_threshold} T and {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
         st.plotly_chart(fig1_combined)
 
-        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} and {model2_file}", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} with  {model1_threshold} T and  {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
         st.plotly_chart(fig2_combined)
 
         strategy_row_dict = {
