@@ -1232,10 +1232,10 @@ def save_results_to_html():
     return html_content
 
 # Setting up GitHub credentials
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 REPOSITORY_NAME = 'dashstatstest'
 
-# Authenticating GitHub
+# Authenticating GitHub 
 g = Github(GITHUB_TOKEN)
 repo = g.get_user().get_repo(REPOSITORY_NAME)
 
