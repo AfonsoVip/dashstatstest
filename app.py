@@ -1523,7 +1523,8 @@ if selected_tab == "History":
         st.write(f'{table_style}{custom_width_html}', unsafe_allow_html=True)
 
         
-        index = st.sidebar.number_input("Select Index", min_value=0, max_value=len(history_results)-1, step=1)
+        index_options = list(range(len(history_results))) # generating a list of options
+        index = st.sidebar.selectbox("Select Index", index_options)
 
         if st.sidebar.button("Display Results"):
             result_data = history_results[index]['result']
@@ -1583,7 +1584,7 @@ if selected_tab == "History":
 
             st.write(f'{table_style}{return_volatility_html}', unsafe_allow_html=True)
 
-        if st.sidebar.button("Delete Results"):
+        elif st.sidebar.button("Delete Results"):
             # Make a temporary copy of the original index
             original_index = index
             # Use the delete_history_item function in your Session class
