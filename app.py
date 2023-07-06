@@ -1012,10 +1012,7 @@ def important_scores_22(df,last_hour,last_day_of_the_year):
 def important_scores_23(df,last_hour,last_day_of_the_year):
 
     # NW 2 STEPS LONG NO THRESHOLD
-    if not df_23_last_hour_last_day.empty:
-        return_2023_first = ((df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1] - df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[0]) / df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1])* 100
-    else:
-        return_2023_first = 0
+    return_2023_first = ((df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1] - df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[0]) / df_23['NW 2 STEPS LONG NO THRESHOLD'].iloc[-1])* 100
     volatility_first = df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_first = ((df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG NO THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_first = df_23['accuracy strategy with threshold'].mean() * 100
@@ -1034,10 +1031,7 @@ def important_scores_23(df,last_hour,last_day_of_the_year):
 
 
     # NW 2STEPS LONG WITH THRESHOLD
-    if not df_23.empty:
-        return_2023_second =  ((df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1] - df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) / df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]) * 100  
-    else:
-        return_2023_second = 0
+    return_2023_second =  ((df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1] - df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[0]) / df_23['NW 2STEPS LONG WITH THRESHOLD'].iloc[-1]) * 100  
     volatility_second = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].std() * 100
     annualized_sharpe_ratio_second = ((df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_second = df_23['accuracy strategy with threshold'].mean() * 100
@@ -1055,10 +1049,7 @@ def important_scores_23(df,last_hour,last_day_of_the_year):
     percentagetime_sell_second = df_23['buy/hold/sell'].value_counts(normalize=True).get(-1, 0) * 100
 
     # NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL
-    if not df_23_last_hour_last_day.empty:
-        return_2023_third = (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1] - df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) / (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]) * 100
-    else:
-        return_2023_third = 0
+    return_2023_third = (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1] - df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[0]) / (df_23['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].iloc[-1]) * 100
     volatility_third = df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].std() * 100
     annualized_sharpe_ratio_third = ((df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].mean() - 0.02/365) / (df_23_last_hour['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL RATIO'].std()) * mt.sqrt(365)) 
     accuracy_strategy_third = df_23['accuracy strategy with threshold and selective sell'].mean() * 100
@@ -1076,10 +1067,7 @@ def important_scores_23(df,last_hour,last_day_of_the_year):
     percentagetime_sell_third = df_23['buy/hold/sell with selective sell'].value_counts(normalize=True).get(-1, 0) * 100
 
     #BTC HOLD
-    if not df_23_last_hour_last_day.empty:
-        return_2023_forth = ((df_23['btc hold'].iloc[-1] - df_23['btc hold'].iloc[0]) / df_23['btc hold'].iloc[-1])* 100
-    else:
-        return_2023_forth = 0
+    return_2023_forth = ((df_23['btc hold'].iloc[-1] - df_23['btc hold'].iloc[0]) / df_23['btc hold'].iloc[-1])* 100
     volatility_forth = df_23_last_hour['btc hold RATIO'].std() * 100
     annualized_sharpe_ratio_forth = ((df_23_last_hour['btc hold RATIO'].mean() - 0.02/365) / (df_23_last_hour['btc hold RATIO'].std()) * mt.sqrt(365)) * 100
     accuracy_strategy_forth = np.nan
@@ -1672,9 +1660,9 @@ if selected_tab == "Comparison":
 
     st.sidebar.write("Model Comparison ")
 
-    # User selection of models
-    index1 = st.sidebar.number_input("Select model 1 index (History)", min_value=0, max_value=len(history_results)-1, step=1)
-    index2 = st.sidebar.number_input("Select model 2 index (History)", min_value=0, max_value=len(history_results)-1, step=1)
+    index_options = list(range(len(history_results))) 
+    index1 = st.sidebar.selectbox("Select Model 1 Index (History)", index_options)
+    index2 = st.sidebar.selectbox("Select Model 2 Index (History)", index_options)
 
     # User selection of strategy
     strategy_list = [
