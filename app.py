@@ -1737,12 +1737,13 @@ if selected_tab == "Comparison":
     initial_date = datetime.combine(initial_date, datetime.min.time())
     last_date = datetime.combine(last_date, datetime.min.time())
 
-    main_df_1 = automatize_for_comparison(main_df_1, initial_date, last_date)
-    main_df_2 = automatize_for_comparison(main_df_2, initial_date, last_date)
-    last_hour_1 = last_hour_df(main_df_1)
-    last_hour_2 = last_hour_df(main_df_2)
 
     if st.sidebar.button("Compare Models"):
+
+        main_df_1 = automatize_for_comparison(main_df_1, initial_date, last_date)
+        main_df_2 = automatize_for_comparison(main_df_2, initial_date, last_date)
+        last_hour_1 = last_hour_df(main_df_1)
+        last_hour_2 = last_hour_df(main_df_2)
         
         # Getting the result data for the selected models
         # result_data1 = history_results[index1]['result']
