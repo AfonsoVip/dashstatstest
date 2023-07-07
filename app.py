@@ -1708,21 +1708,6 @@ if selected_tab == "Comparison":
     selected_strategy1 = st.sidebar.selectbox("Select strategy for Model 1", strategy_list, key='strategy1')
     selected_strategy2 = st.sidebar.selectbox("Select strategy for Model 2", strategy_list, key='strategy2')  
 
-    result_data1 = history_results[index1]['result']
-    main_df_1 = pd.read_json(result_data1['main_df'], orient='split')
-    result_data2 = history_results[index2]['result']
-    main_df_2 = pd.read_json(result_data2['main_df'], orient='split')
-    model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
-    model1_threshold = history_results[index1]['threshold']
-    model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
-    model2_threshold = history_results[index2]['threshold']
-
-    # Converting 'StartTime' column from Unix timestamp to datetime
-    main_df_1['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
-
-    # Converting 'StartTime' column from Unix timestamp to datetime
-    main_df_2['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
-
     min_date_1 = main_df_1['StartTime'].min().date()
     max_date_1 = main_df_1['StartTime'].max().date()
 
@@ -1739,6 +1724,21 @@ if selected_tab == "Comparison":
 
 
     if st.sidebar.button("Compare Models"):
+
+        result_data1 = history_results[index1]['result']
+        main_df_1 = pd.read_json(result_data1['main_df'], orient='split')
+        result_data2 = history_results[index2]['result']
+        main_df_2 = pd.read_json(result_data2['main_df'], orient='split')
+        model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
+        model1_threshold = history_results[index1]['threshold']
+        model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
+        model2_threshold = history_results[index2]['threshold']
+
+        # Converting 'StartTime' column from Unix timestamp to datetime
+        main_df_1['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
+        
+        # Converting 'StartTime' column from Unix timestamp to datetime
+        main_df_2['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
 
         main_df_1 = automatize_for_comparison(main_df_1, initial_date, last_date)
         main_df_2 = automatize_for_comparison(main_df_2, initial_date, last_date)
