@@ -1153,11 +1153,16 @@ def format_dataframe_values(df, num_columns=6):
         formatted_df[col] = formatted_df[col].apply(lambda x: f"${x:.2f}" if isinstance(x, (int, float)) else x)
     return formatted_df
 
-def save_results_to_html():
+def save_results_to_html(table1_html=None):
     # Convert the Plotly plots to HTML
     plot1_html = pyo.plot(fig1, include_plotlyjs=False, output_type='div')
     plot2_html = pyo.plot(fig2, include_plotlyjs=False, output_type='div')
     plot3_html = pyo.plot(fig3, include_plotlyjs=False, output_type='div')
+    
+    if table1_html is not None:
+        threshold_summary = f'<h3>Threshold Summary</h3> {table1_html}'
+    else:
+        threshold_summary = ''  # If there's no table1_html, threshold_summary will be an empty string
 
     # Creating the final HTML content
     html_content = f'''
@@ -1193,8 +1198,7 @@ def save_results_to_html():
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     </head>
     <body>
-        <h3>Threshold Summary</h3>
-        {table1_html}
+        {threshold_summary}
         {plot1_html}
         {plot2_html}
         {plot3_html}
