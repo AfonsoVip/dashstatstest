@@ -1400,15 +1400,17 @@ if selected_tab == "Upload & Run":
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True)
+
+         if calculate_thresholds:
+                st.markdown("<h3 style='color: #3dfd9f;'>Threshold Summary</h3>", unsafe_allow_html=True)
+                table1_html = df_thresholds.to_html(classes="dataframe")
+                st.write(f'{table_style}{table1_html}', unsafe_allow_html=True)
         
-        table1_html = df_thresholds.to_html(classes="dataframe")
         table2_html = first_strategy_df.to_html(classes="dataframe")
         table3_html = second_strategy_df.to_html(classes="dataframe")
         table4_html = third_strategy_df.to_html(classes="dataframe")
         table5_html = return_volatility_df.to_html(classes="dataframe")
 
-        st.write(f'{table_style}{table1_html}', unsafe_allow_html=True)
         st.plotly_chart(fig1)
         st.plotly_chart(fig2)
         st.plotly_chart(fig3)
@@ -1439,7 +1441,6 @@ if selected_tab == "Upload & Run":
             'file_name': uploaded_file.name,
             'timestamp': time.ctime(),
             'threshold': threshold,
-            'df_thresholds': df_thresholds.reset_index().to_json(orient='split'),
             'first_strategy_df': first_strategy_df.reset_index().to_json(orient='split'),
             'second_strategy_df': second_strategy_df.reset_index().to_json(orient='split'),
             'third_strategy_df': third_strategy_df.reset_index().to_json(orient='split'),
@@ -1448,7 +1449,10 @@ if selected_tab == "Upload & Run":
             'fig2': json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder),
             'fig3': json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder),
         }
-        
+  
+        if calculate_thresholds:
+                result['df_thresholds'] = df_thresholds.reset_index().to_json(orient='split')
+            
         session.add_result(file_name, timestamp, threshold, result)
         st.markdown("<br>", unsafe_allow_html=True)
         st.write("Results saved to history.")
