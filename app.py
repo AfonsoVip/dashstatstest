@@ -1401,7 +1401,7 @@ if selected_tab == "Upload & Run":
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-         if calculate_thresholds:
+        if calculate_thresholds:
                 st.markdown("<h3 style='color: #3dfd9f;'>Threshold Summary</h3>", unsafe_allow_html=True)
                 table1_html = df_thresholds.to_html(classes="dataframe")
                 st.write(f'{table_style}{table1_html}', unsafe_allow_html=True)
