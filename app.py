@@ -13,13 +13,14 @@ import time
 import plotly.io as pio
 from session import Session
 from github import Github
-import datetime
+import datetime as dt
 import plotly.offline as pyo
 import json
 import os
 pd.options.mode.chained_assignment = None  
 
 
+from datetime import datetime
 from io import StringIO
 from PIL import Image
 from io import BytesIO
@@ -148,7 +149,7 @@ def networth_evolution(df):
     colors = ['#3dfd9f', '#66ffff', '#1d98e3', '#c00000']
     for i, strategy in enumerate(strategies):
         new_name = name_mapping[strategy]
-        trace = go.Scatter(x=last_hour['StartTime'], y=last_hour[strategy], name=new_name, line=dict(color=colors[i]))
+        trace = go.Scatter(x=df['StartTime'], y=df[strategy], name=new_name, line=dict(color=colors[i]))
         fig.add_trace(trace)
 
     # Customizing the layout of the subplot
@@ -191,7 +192,7 @@ def networth_evolution_each_day(df):
     colors = ['#3dfd9f', '#66ffff', '#1d98e3', '#c00000']
     for i, strategy in enumerate(strategies):
         new_name = name_mapping[strategy]
-        trace = go.Scatter(x=last_hour['StartTime'], y=last_hour[strategy], name=new_name, line=dict(color=colors[i]))
+        trace = go.Scatter(x=df['StartTime'], y=df[strategy], name=new_name, line=dict(color=colors[i]))
         fig.add_trace(trace)
 
     # Customizing the layout of the subplot
@@ -268,10 +269,6 @@ def format_percentage_normal(col):
 
 
 def automatizev2(initial_df,starttime,price_open,price_close,prediction,threshold):
- 
-    mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00') 
-    initial_df = initial_df.loc[mask]
-    initial_df = initial_df.reset_index(drop=True)
     initial_df['signal'] = np.where(initial_df['Prediction'] / initial_df['Price Close'] - 1 > 0, 1, -1)
 
     pct_change = initial_df['Prediction'] / initial_df['Price Close'] - 1
@@ -503,7 +500,7 @@ def automatize(starttime,price_open,price_close,prediction,threshold):
 
     return initial_df
 
-def last_hour_df(df):
+def last_hour_df(main_df):
     last_hour_df = main_df[main_df['StartTime'].apply(lambda x: x.hour) == 23]
     last_hour_df['NW 2STEPS LONG NO THRESHOLD LAST HOUR'] = last_hour_df['StartTime'].apply(lambda x: main_df.loc[main_df['StartTime'] == x, 'NW 2 STEPS LONG NO THRESHOLD'].iloc[0])
     last_hour_df['NW 2STEPS LONG WITH THRESHOLD LAST HOUR'] = last_hour_df['StartTime'].apply(lambda x: main_df.loc[main_df['StartTime'] == x, 'NW 2STEPS LONG WITH THRESHOLD'].iloc[0])
@@ -596,7 +593,7 @@ def safe_round_and_format(x):
 def format_start_time(datetime_obj):
     if isinstance(datetime_obj, str):
         return datetime_obj
-    if isinstance(datetime_obj, datetime.date):
+    if isinstance(datetime_obj, dt.date):
         return datetime_obj.strftime("%Y-%m-%d")
 
 def return_volatility(df):
@@ -1229,7 +1226,7 @@ repo = g.get_user().get_repo(REPOSITORY_NAME)
 
 def save_run_to_github(threshold, filename, content):
     # Creating a timestamp and format the folder name
-    now = datetime.datetime.now().strftime("%Y-%m-%d")
+    now = dt.datetime.now().strftime("%Y-%m-%d")
     folder_name = f'runs/{now}_threshold-{threshold}_file-{filename}/result.html'
     try:
         file = repo.get_contents(folder_name)
@@ -1307,7 +1304,6 @@ if selected_tab == "Upload & Run":
         df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
         df_thresholds = format_dataframe_values(df_thresholds, num_columns=6)
         
-        # df_thresholds = format_dataframe_values(df_thresholds)
         main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
         
         last_hour = last_hour_df(main_df)
@@ -1436,6 +1432,7 @@ if selected_tab == "Upload & Run":
 
         # Save results to database
         result = {
+            'main_df': main_df.reset_index().to_json(orient='split'), 
             'file_name': uploaded_file.name,
             'timestamp': time.ctime(),
             'threshold': threshold,
@@ -1499,7 +1496,8 @@ if selected_tab == "History":
     history_results = session.get_history()
     
     if history_results:
-        # Convert DataFrame to HTML table using table_style
+
+        # Converting DataFrame to HTML table using table_style
         df = pd.DataFrame(history_results, columns=['file_name', 'timestamp', 'threshold'])
 
         table1_html = df.to_html(classes="dataframe")
@@ -1515,6 +1513,7 @@ if selected_tab == "History":
         index = st.sidebar.selectbox("Select Index", index_options)
 
         if st.sidebar.button("Display Results"):
+
             result_data = history_results[index]['result']
             selected_result = {
                 'df_thresholds': pd.read_json(result_data['df_thresholds'], orient='split'),
@@ -1617,6 +1616,41 @@ def keep_selected_trace(fig, selected_strategy, model_number,model_threshold, mo
     
     return fig
 
+def automatize_for_comparison(initial_df,initial_date,last_date):
+
+    initial_df = initial_df.loc[(initial_df['StartTime'] >= initial_date) & (initial_df['StartTime'] <= last_date)]
+    initial_df = initial_df.reset_index(drop=True)
+
+    initial_df = initial_df[['StartTime','Price Open','Price Close','signal','buy/hold/sell','buy/hold/sell with selective sell','in/out 2 STEPS LONG NO THRESHOLD','in/out 2STEPS LONG WITH THRESHOLD','in/out 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL']]
+
+    initial_df['NW 2 STEPS LONG NO THRESHOLD'] = 100
+    initial_df['NW 2 STEPS LONG NO THRESHOLD'][1] = initial_df['NW 2 STEPS LONG NO THRESHOLD'][0] * (1 + initial_df['in/out 2 STEPS LONG NO THRESHOLD'][0] * (initial_df['Price Close'][1] / initial_df['Price Close'][0] - 1))
+    for i in range(2, len(initial_df)):
+        initial_df['NW 2 STEPS LONG NO THRESHOLD'][i] = initial_df['NW 2 STEPS LONG NO THRESHOLD'][i-1] * (1 + initial_df['in/out 2 STEPS LONG NO THRESHOLD'][i-1] * (initial_df['Price Close'][i] / initial_df['Price Close'][i-1] - 1))
+
+    initial_df['NW 2 STEPS LONG NO THRESHOLD'] = initial_df['NW 2 STEPS LONG NO THRESHOLD'].round(12)
+
+    initial_df['NW 2STEPS LONG WITH THRESHOLD'] = 100
+    initial_df['NW 2STEPS LONG WITH THRESHOLD'][1] = initial_df['NW 2STEPS LONG WITH THRESHOLD'][0] * (1 + initial_df['in/out 2STEPS LONG WITH THRESHOLD'][0] * (initial_df['Price Close'][1] / initial_df['Price Close'][0] - 1))
+    for i in range(2, len(initial_df)):
+        initial_df['NW 2STEPS LONG WITH THRESHOLD'][i] = initial_df['NW 2STEPS LONG WITH THRESHOLD'][i-1] * (1 + initial_df['in/out 2STEPS LONG WITH THRESHOLD'][i-1] * (initial_df['Price Close'][i] / initial_df['Price Close'][i-1] - 1))
+
+    initial_df['NW 2STEPS LONG WITH THRESHOLD'] = initial_df['NW 2STEPS LONG WITH THRESHOLD'].round(12)
+
+    initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = 100
+    initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'][1] = initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'][0] * (1 + initial_df['in/out 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'][0] * (initial_df['Price Close'][1] / initial_df['Price Close'][0] - 1))
+    for i in range(2, len(initial_df)):
+        initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'][i] = initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'][i-1] * (1 + initial_df['in/out 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'][i-1] * (initial_df['Price Close'][i] / initial_df['Price Close'][i-1] - 1))
+
+    initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'] = initial_df['NW 2STEPS LONG WITH THRESHOLD AND SELECTIVE SELL'].round(7)
+
+    initial_df['btc hold'] = 100
+    for i in range(1, len(initial_df)):
+        initial_df['btc hold'][i] = initial_df['btc hold'][i-1] * initial_df['Price Close'][i] / initial_df['Price Close'][i-1]
+
+    initial_df['btc hold'] = initial_df['btc hold'].round(12)
+
+    return initial_df
 
 if selected_tab == "Comparison":
 
@@ -1673,19 +1707,50 @@ if selected_tab == "Comparison":
     
     selected_strategy1 = st.sidebar.selectbox("Select strategy for Model 1", strategy_list, key='strategy1')
     selected_strategy2 = st.sidebar.selectbox("Select strategy for Model 2", strategy_list, key='strategy2')  
-      
-    if st.sidebar.button("Compare Models"):
-        # Getting the result data for the selected models
-        result_data1 = history_results[index1]['result']
-        result_data2 = history_results[index2]['result']
-        model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
-        model1_threshold = history_results[index1]['threshold']
-        model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
-        model2_threshold = history_results[index2]['threshold']
-        ret_vol_df1 = pd.read_json(history_results[index1]['result']['return_volatility_df'], orient='split')
-        ret_vol_df2 = pd.read_json(history_results[index2]['result']['return_volatility_df'], orient='split')
 
-          # Extracting the selected strategy data for each model
+    result_data1 = history_results[index1]['result']
+    main_df_1 = pd.read_json(result_data1['main_df'], orient='split')
+    result_data2 = history_results[index2]['result']
+    main_df_2 = pd.read_json(result_data2['main_df'], orient='split')
+    model1_file, _ = os.path.splitext(history_results[index1]['file_name'])
+    model1_threshold = history_results[index1]['threshold']
+    model2_file, _ = os.path.splitext(history_results[index2]['file_name'])
+    model2_threshold = history_results[index2]['threshold']
+
+    # Converting 'StartTime' column from Unix timestamp to datetime
+    main_df_1['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
+
+    # Converting 'StartTime' column from Unix timestamp to datetime
+    main_df_2['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
+
+    min_date_1 = main_df_1['StartTime'].min().date()
+    max_date_1 = main_df_1['StartTime'].max().date()
+
+    min_date_2 = main_df_2['StartTime'].min().date()
+    max_date_2 = main_df_2['StartTime'].max().date()
+
+    # Take maximum min_date and minimum max_date
+    initial_date = st.sidebar.date_input("Select initial date", max(min_date_1, min_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
+    last_date = st.sidebar.date_input("Select last date", min(max_date_1, max_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
+
+    # Converting date to datetime
+    initial_date = datetime.combine(initial_date, datetime.min.time())
+    last_date = datetime.combine(last_date, datetime.min.time())
+
+    main_df_1 = automatize_for_comparison(main_df_1, initial_date, last_date)
+    main_df_2 = automatize_for_comparison(main_df_2, initial_date, last_date)
+    last_hour_1 = last_hour_df(main_df_1)
+    last_hour_2 = last_hour_df(main_df_2)
+
+    if st.sidebar.button("Compare Models"):
+        
+        # Getting the result data for the selected models
+        # result_data1 = history_results[index1]['result']
+        # result_data2 = history_results[index2]['result']
+        # ret_vol_df1 = pd.read_json(history_results[index1]['result']['return_volatility_df'], orient='split')
+        # ret_vol_df2 = pd.read_json(history_results[index2]['result']['return_volatility_df'], orient='split')
+
+        # Extracting the selected strategy data for each model
         strategy_key1 = ""
         if selected_strategy1 == 'Trading Strategy':
             strategy_key1 = 'first_strategy_df'
@@ -1702,34 +1767,93 @@ if selected_tab == "Comparison":
         elif selected_strategy2 == 'High Exposure Strategy':
             strategy_key2 = 'third_strategy_df'
 
-        strategy_data1 = pd.read_json(result_data1[strategy_key1], orient='split')
-        strategy_data2 = pd.read_json(result_data2[strategy_key2], orient='split')
+        # strategy_data1 = pd.read_json(result_data1[strategy_key1], orient='split')
+        # strategy_data2 = pd.read_json(result_data2[strategy_key2], orient='split')
         
-        # Adding the Table style for both tables 
-        strategy_data1_html = strategy_data1.to_html(classes="dataframe",index=False)
-        strategy_data2_html = strategy_data2.to_html(classes="dataframe",index=False)
-        styled_strategy_data1_html = f'{table_style}{strategy_data1_html}'
-        styled_strategy_data2_html = f'{table_style}{strategy_data2_html}'
+        # # Adding the Table style for both tables 
+        # strategy_data1_html = strategy_data1.to_html(classes="dataframe",index=False)
+        # strategy_data2_html = strategy_data2.to_html(classes="dataframe",index=False)
+        # styled_strategy_data1_html = f'{table_style}{strategy_data1_html}'
+        # styled_strategy_data2_html = f'{table_style}{strategy_data2_html}'
 
-        styled_strategy_data1_html = styled_strategy_data1_html.replace('<th>index</th>', '<th></th>')
-        styled_strategy_data2_html = styled_strategy_data2_html.replace('<th>index</th>', '<th></th>')
-
-
-        # Display strategy data side-by-side
-        col1, col2 = st.columns(2)
-
-        col1.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model1_file} (T: {model1_threshold}) - {selected_strategy1}</h3>", unsafe_allow_html=True)
-        col2.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model2_file} (T: {model2_threshold}) - {selected_strategy2}</h3>", unsafe_allow_html=True)
+        # styled_strategy_data1_html = styled_strategy_data1_html.replace('<th>index</th>', '<th></th>')
+        # styled_strategy_data2_html = styled_strategy_data2_html.replace('<th>index</th>', '<th></th>')
 
 
-        col1.write(styled_strategy_data1_html, unsafe_allow_html=True)
-        col2.write(styled_strategy_data2_html, unsafe_allow_html=True)
+        # # Display strategy data side-by-side
+        # col1, col2 = st.columns(2)
 
-        # Loading the figures for the selected models
-        fig1_model1 = plotly.io.from_json(result_data1['fig1'])
-        fig1_model2 = plotly.io.from_json(result_data2['fig1'])
-        fig2_model1 = plotly.io.from_json(result_data1['fig2'])
-        fig2_model2 = plotly.io.from_json(result_data2['fig2'])
+        # col1.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model1_file} (T: {model1_threshold}) - {selected_strategy1}</h3>", unsafe_allow_html=True)
+        # col2.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>{model2_file} (T: {model2_threshold}) - {selected_strategy2}</h3>", unsafe_allow_html=True)
+
+
+        # col1.write(styled_strategy_data1_html, unsafe_allow_html=True)
+        # col2.write(styled_strategy_data2_html, unsafe_allow_html=True)
+
+        # # Loading the figures for the selected models
+        # fig1_model1 = plotly.io.from_json(result_data1['fig1'])
+        # fig1_model2 = plotly.io.from_json(result_data2['fig1'])
+        # fig2_model1 = plotly.io.from_json(result_data1['fig2'])
+        # fig2_model2 = plotly.io.from_json(result_data2['fig2'])
+
+        # # Keeping only the selected strategies in each figure
+        # fig1_model1 = keep_selected_trace(fig1_model1, selected_strategy1,1,model1_threshold,model1_file)
+        # fig1_model2 = keep_selected_trace(fig1_model2, selected_strategy2,2,model2_threshold,model2_file)
+        # fig2_model1 = keep_selected_trace(fig2_model1, selected_strategy1,1,model1_threshold,model1_file)
+        # fig2_model2 = keep_selected_trace(fig2_model2, selected_strategy2,2,model2_threshold,model2_file)
+
+        # # Combining the selected strategies for both models into new figures
+        # fig1_combined = go.Figure(data=fig1_model1.data + fig1_model2.data)
+        # fig1_combined.update_layout(autosize=False, width=1000, height=500)
+        # fig2_combined = go.Figure(data=fig2_model1.data + fig2_model2.data)
+        # fig2_combined.update_layout(autosize=False, width=1000, height=500)
+
+        # # Removing Grid 
+        # fig1_combined.update_xaxes(showgrid=False)
+        # fig1_combined.update_yaxes(showgrid=False)
+        # fig2_combined.update_xaxes(showgrid=False)
+        # fig2_combined.update_yaxes(showgrid=False)
+        
+        # # Updating Size
+        # fig1_combined.update_layout(width=1100, height=600)
+        # fig2_combined.update_layout(width=1100, height=600)
+
+
+        # st.markdown("<br>", unsafe_allow_html=True)
+        # st.markdown("<br>", unsafe_allow_html=True)
+        # st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution between {model1_file} with {model1_threshold} T and {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
+        # st.plotly_chart(fig1_combined)
+
+        # st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} with  {model1_threshold} T and  {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
+        # st.plotly_chart(fig2_combined)
+
+        # strategy_row_dict = {
+        #     'Trading Strategy': [0, 1, 2], 
+        #     'Low Exposure Strategy': [0, 3, 4], 
+        #     'High Exposure Strategy': [0, 5, 6]
+        # }
+
+        # if selected_strategy1 in strategy_row_dict:
+        #     merged_row_1 = ret_vol_df1.loc[strategy_row_dict[selected_strategy1]]
+
+        # if selected_strategy2 in strategy_row_dict:
+        #     merged_row_2 = ret_vol_df2.loc[strategy_row_dict[selected_strategy2]]
+    
+
+        # final_merge = pd.merge(merged_row_1,merged_row_2,how = 'outer')
+
+        # final_merge_html = final_merge.to_html(classes="dataframe",index=False)
+
+        # final_merge_html = final_merge_html.replace('<th>level_0</th>', '<th></th>')
+        # final_merge_html = final_merge_html.replace('<th>level_1</th>', '<th></th>')
+
+        # st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Return and Volatility {model1_file} with {model1_threshold} T and {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
+        # st.write(final_merge_html,unsafe_allow_html=True)
+
+        fig1_model1 = networth_evolution(last_hour_1)
+        fig1_model2 = networth_evolution(last_hour_2)
+        fig2_model1 = networth_evolution_each_day(last_hour_1)
+        fig2_model2 = networth_evolution_each_day(last_hour_2)
 
         # Keeping only the selected strategies in each figure
         fig1_model1 = keep_selected_trace(fig1_model1, selected_strategy1,1,model1_threshold,model1_file)
@@ -1737,7 +1861,7 @@ if selected_tab == "Comparison":
         fig2_model1 = keep_selected_trace(fig2_model1, selected_strategy1,1,model1_threshold,model1_file)
         fig2_model2 = keep_selected_trace(fig2_model2, selected_strategy2,2,model2_threshold,model2_file)
 
-        # Combining the selected strategies for both models into new figures
+         # Combining the selected strategies for both models into new figures
         fig1_combined = go.Figure(data=fig1_model1.data + fig1_model2.data)
         fig1_combined.update_layout(autosize=False, width=1000, height=500)
         fig2_combined = go.Figure(data=fig2_model1.data + fig2_model2.data)
@@ -1748,7 +1872,10 @@ if selected_tab == "Comparison":
         fig1_combined.update_yaxes(showgrid=False)
         fig2_combined.update_xaxes(showgrid=False)
         fig2_combined.update_yaxes(showgrid=False)
-
+        
+        # Updating Size
+        fig1_combined.update_layout(width=1100, height=600)
+        fig2_combined.update_layout(width=1100, height=600)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1758,25 +1885,3 @@ if selected_tab == "Comparison":
         st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Networth Evolution if started on this day between {model1_file} with  {model1_threshold} T and  {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
         st.plotly_chart(fig2_combined)
 
-        strategy_row_dict = {
-            'Trading Strategy': [0, 1, 2], 
-            'Low Exposure Strategy': [0, 3, 4], 
-            'High Exposure Strategy': [0, 5, 6]
-        }
-
-        if selected_strategy1 in strategy_row_dict:
-            merged_row_1 = ret_vol_df1.loc[strategy_row_dict[selected_strategy1]]
-
-        if selected_strategy2 in strategy_row_dict:
-            merged_row_2 = ret_vol_df2.loc[strategy_row_dict[selected_strategy2]]
-    
-
-        final_merge = pd.merge(merged_row_1,merged_row_2,how = 'outer')
-
-        final_merge_html = final_merge.to_html(classes="dataframe",index=False)
-
-        final_merge_html = final_merge_html.replace('<th>level_0</th>', '<th></th>')
-        final_merge_html = final_merge_html.replace('<th>level_1</th>', '<th></th>')
-
-        st.markdown(f"<h3 style='color: #3dfd9f;font-size: 16px;'>Return and Volatility {model1_file} with {model1_threshold} T and {model2_file} with {model2_threshold} T", unsafe_allow_html=True)
-        st.write(final_merge_html,unsafe_allow_html=True)
