@@ -1534,6 +1534,7 @@ if selected_tab == "History":
             
             if calculate_thresholds and 'df_thresholds' in result_data:
                 selected_result['df_thresholds'] = pd.read_json(result_data['df_thresholds'], orient='split')
+                df_thresholds_html = selected_result['df_thresholds'].to_html(classes="dataframe",index=False)
                 
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
@@ -1541,8 +1542,6 @@ if selected_tab == "History":
 
             if calculate_thresholds and 'df_thresholds' in selected_result:
                     st.markdown("<h3 style='color: #3dfd9f;font-size: 20px;'>Threshold Summary</h3>", unsafe_allow_html=True
-                    # Apply table_style to df_thresholds
-                    df_thresholds_html = selected_result['df_thresholds'].to_html(classes="dataframe",index=False)
                     st.write(f'{table_style}{df_thresholds_html}', unsafe_allow_html=True)
 
             st.plotly_chart(selected_result['fig1'])
