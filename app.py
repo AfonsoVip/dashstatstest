@@ -1250,7 +1250,6 @@ if selected_tab == "Upload & Run":
     threshold = st.sidebar.number_input("Define your threshold:", min_value=0.0,step=0.1,format='%2f')
     threshold_decimal = threshold / 100
 
-    uploaded_file = st.sidebar.file_uploader("Drag and drop your file", type=['csv','xlsx','xlsm'])
 
     st.markdown(
     f'<div class="top-right" style="color:#3dfd9f">Defined Threshold: <strong style="color:#ffffff">{threshold}%</strong></div>',
@@ -1259,6 +1258,10 @@ if selected_tab == "Upload & Run":
     default_strategy = "High Exposure Strategy"
 
     selected_strategy = st.sidebar.selectbox("BTC Performance Strategy:", strategies, index=strategies.index(default_strategy), key='strategy_selection')
+
+    calculate_thresholds = st.sidebar.checkbox("Calculate Threshold Summary")
+
+    uploaded_file = st.sidebar.file_uploader("Drag and drop your file", type=['csv','xlsx','xlsm'])
 
     submit_button = st.sidebar.button("Submit")
 
@@ -1294,15 +1297,15 @@ if selected_tab == "Upload & Run":
                     initial_df = pd.read_csv(StringIO(csv_text))
         else:
             st.write("Unsupported file type. Please upload a CSV, XLSX, or XLSM file.")
+            
         initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
         initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
-        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00')
         df_start = initial_df.copy()
-        initial_df = initial_df.loc[mask]
-        initial_df = initial_df.reset_index(drop=True)
-        
-        df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
-        df_thresholds = format_dataframe_values(df_thresholds, num_columns=6)
+      # initial_df = initial_df.reset_index(drop=True)
+
+        if calculate_thresholds:
+            df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
+            df_thresholds = format_dataframe_values(df_thresholds, num_columns=6)
         
         main_df = automatize(initial_df['StartTime'], initial_df['Price Open'], initial_df['Price Close'], initial_df['Price Close'], threshold_decimal)
         
