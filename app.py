@@ -1750,8 +1750,8 @@ if selected_tab == "Comparison":
     last_date = st.sidebar.date_input('Select last date', value=overall_max_date, min_value=overall_min_date, max_value=overall_max_date)
 
     # Converting date to datetime
-    initial_date = datetime.combine(initial_date, datetime.min.time())
-    last_date = datetime.combine(last_date, datetime.min.time())
+    initial_date = datetime.combine(initial_date, datetime.time())
+    last_date = datetime.combine(last_date, datetime.time())
 
 
     if st.sidebar.button("Compare Models"):
