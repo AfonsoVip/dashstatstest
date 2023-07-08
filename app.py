@@ -1267,9 +1267,7 @@ if selected_tab == "Upload & Run":
 
     uploaded_file = st.sidebar.file_uploader("Drag and drop your file", type=['csv','xlsx','xlsm'])
 
-    submit_button = st.sidebar.button("Submit")
-
-
+    submit_button = st.sidebar.button("Run")
 
     if uploaded_file:
         st.markdown(
@@ -1305,7 +1303,6 @@ if selected_tab == "Upload & Run":
         initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
         initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
         df_start = initial_df.copy()
-      # initial_df = initial_df.reset_index(drop=True)
 
         if calculate_thresholds:
             df_thresholds = threshold_summary([0.0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02],df_start)
