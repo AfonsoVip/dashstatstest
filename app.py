@@ -1743,7 +1743,7 @@ if selected_tab == "Comparison":
 
     # Take maximum min_date and minimum max_date
     initial_date = st.sidebar.date_input("Select initial date", max(min_date_1, min_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
-    last_date = st.sidebar.date_input("Select last date", max(max_date_1, max_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
+    last_date = st.sidebar.date_input("Select last date", min(max_date_1, max_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
 
     # Converting date to datetime
     initial_date = datetime.combine(initial_date, datetime.min.time())
