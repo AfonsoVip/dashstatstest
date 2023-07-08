@@ -1887,8 +1887,8 @@ if selected_tab == "Comparison":
         fig2_combined.update_yaxes(showgrid=False)
         
         # Updating Size
-        fig1_combined.update_layout(width=1100, height=600)
-        fig2_combined.update_layout(width=1100, height=600)
+        fig1_combined.update_layout(width=1500, height=600)
+        fig2_combined.update_layout(width=1500, height=600)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
