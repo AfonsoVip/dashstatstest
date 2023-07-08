@@ -1751,7 +1751,7 @@ if selected_tab == "Comparison":
 
     # Converting date to datetime
     initial_date = datetime.combine(initial_date, datetime.min.time())
-    last_date = datetime.combine(last_date, datetime.min.time())
+    last_date = datetime.combine(last_date, datetime.max.time())
 
 
     if st.sidebar.button("Compare Models"):
