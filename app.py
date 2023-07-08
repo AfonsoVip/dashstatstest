@@ -1733,7 +1733,7 @@ if selected_tab == "Comparison":
     main_df_1['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
     
     # Converting 'StartTime' column from Unix timestamp to datetime
-    main_df_2['StartTime'] = pd.to_datetime(main_df_1['StartTime'], unit='ms')
+    main_df_2['StartTime'] = pd.to_datetime(main_df_2['StartTime'], unit='ms')
 
     min_date_1 = main_df_1['StartTime'].min().date()
     max_date_1 = main_df_1['StartTime'].max().date()
