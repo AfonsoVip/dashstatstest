@@ -1737,13 +1737,17 @@ if selected_tab == "Comparison":
 
     min_date_1 = main_df_1['StartTime'].min().date()
     max_date_1 = main_df_1['StartTime'].max().date()
-
+    
     min_date_2 = main_df_2['StartTime'].min().date()
     max_date_2 = main_df_2['StartTime'].max().date()
-
-    # Take maximum min_date and minimum max_date
-    initial_date = st.sidebar.date_input("Select initial date", min(min_date_1, min_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
-    last_date = st.sidebar.date_input("Select last date", max(max_date_1, max_date_2), min_value=max(min_date_1, min_date_2), max_value=min(max_date_1, max_date_2))
+    
+    # Get the minimum date and maximum date from both dataframes
+    overall_min_date = min(min_date_1, min_date_2)
+    overall_max_date = max(max_date_1, max_date_2)
+    
+    # Now apply these min and max dates in your date inputs
+    initial_date = st.sidebar.date_input('Select initial date', value=overall_min_date, min_value=overall_min_date, max_value=overall_max_date)
+    last_date = st.sidebar.date_input('Select last date', value=overall_max_date, min_value=overall_min_date, max_value=overall_max_date)
 
     # Converting date to datetime
     initial_date = datetime.combine(initial_date, datetime.min.time())
