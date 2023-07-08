@@ -1751,7 +1751,7 @@ if selected_tab == "Comparison":
 
     # Converting date to datetime
     initial_date = datetime.combine(initial_date, datetime.min.time())
-    last_date = datetime.combine(last_date, datetime.max.time())
+    last_date = datetime.combine(last_date, datetime.min.time())
 
 
     if st.sidebar.button("Compare Models"):
@@ -1880,9 +1880,9 @@ if selected_tab == "Comparison":
 
          # Combining the selected strategies for both models into new figures
         fig1_combined = go.Figure(data=fig1_model1.data + fig1_model2.data)
-        fig1_combined.update_layout(autosize=False, width=1000, height=500)
+        fig1_combined.update_layout(autosize=False, width=1500, height=600)
         fig2_combined = go.Figure(data=fig2_model1.data + fig2_model2.data)
-        fig2_combined.update_layout(autosize=False, width=1000, height=500)
+        fig2_combined.update_layout(autosize=False, width=1500, height=600)
 
         # Removing Grid 
         fig1_combined.update_xaxes(showgrid=False)
@@ -1890,9 +1890,6 @@ if selected_tab == "Comparison":
         fig2_combined.update_xaxes(showgrid=False)
         fig2_combined.update_yaxes(showgrid=False)
         
-        # Updating Size
-        fig1_combined.update_layout(width=1500, height=600)
-        fig2_combined.update_layout(width=1500, height=600)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
