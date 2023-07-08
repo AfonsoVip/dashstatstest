@@ -1265,7 +1265,7 @@ if selected_tab == "Upload & Run":
 
     calculate_thresholds = st.sidebar.checkbox("Calculate Threshold Summary")
 
-    uploaded_file = st.sidebar.file_uploader("Drag and drop your file", type=['csv','xlsx','xlsm'])
+    uploaded_file = st.sidebar.file_uploader("Upload your file", type=['csv','xlsx','xlsm'])
 
     submit_button = st.sidebar.button("Run")
 
@@ -1280,7 +1280,7 @@ if selected_tab == "Upload & Run":
         if uploaded_file.name.endswith('.csv'):
                 initial_df = pd.read_csv(uploaded_file, encoding='utf-8')
                 if not is_correct_format(initial_df):
-                # Reset the uploaded file to the start
+                    # Reset the uploaded file to the start
                     uploaded_file.seek(0)
                     initial_df = pd.read_csv(uploaded_file, encoding='utf-8',header=None)
                     # Convert the first column values to text
@@ -1290,7 +1290,7 @@ if selected_tab == "Upload & Run":
         elif uploaded_file.name.endswith(('.xlsx', '.xlsm')):
             initial_df = pd.read_excel(uploaded_file, engine='openpyxl')
             if not is_correct_format(initial_df):
-                # Reset the uploaded file to the start
+                    # Reset the uploaded file to the start
                     uploaded_file.seek(0)
                     initial_df = pd.read_excel(uploaded_file, engine='openpyxl',header=None)
                     # Convert the first column values to text
