@@ -1302,6 +1302,9 @@ if selected_tab == "Upload & Run":
             
         initial_df = initial_df[['StartTime','Price Open','Price Close','Prediction']]
         initial_df['StartTime'] = pd.to_datetime(initial_df['StartTime'])
+        mask = (initial_df['StartTime'] >= '2021-01-01 00:00:00')
+        initial_df = initial_df.loc[mask]
+        initial_df = initial_df.reset_index(drop=True)
         df_start = initial_df.copy()
 
         if calculate_thresholds:
